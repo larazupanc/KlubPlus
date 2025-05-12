@@ -5,6 +5,7 @@ import SignUp from "layouts/authentication/sign-up";
 import Sestanki from "layouts/sestanki";
 import Projekti from "layouts/projekti";
 import Ure from "layouts/ure";
+import Koledar from "layouts/koledar";
 
 import Icon from "@mui/material/Icon";
 
@@ -40,6 +41,14 @@ const routes = [
     icon: <Icon fontSize="small">event_note</Icon>,
     route: "/projekti",
     component: <Projekti />,
+  },
+  {
+    type: "collapse",
+    name: "Koledar",
+    key: "koledar",
+    icon: <Icon fontSize="small">event_note</Icon>,
+    route: "/koledat",
+    component: <Koledar />,
   },
   {
     type: "collapse",

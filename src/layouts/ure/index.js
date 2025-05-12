@@ -16,7 +16,9 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import { db } from "firebaseConfig";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
+
+import { parseISO, isSameMonth } from "date-fns";
 
 import img1 from "assets/images/1.png";
 import img2 from "assets/images/2.png";
@@ -43,6 +45,8 @@ function UradneUre() {
   const [name, setName] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [selectedCoupons, setSelectedCoupons] = useState({});
+  const [customerUsage, setCustomerUsage] = useState({});
+  const [couponCheckDone, setCouponCheckDone] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -87,16 +91,44 @@ function UradneUre() {
     setName("");
   };
 
+  const checkCustomerCoupons = async () => {
+    if (!customerName.trim() || couponCheckDone) return;
+
+    try {
+      const now = new Date();
+      const kuponiRef = collection(db, "kuponi");
+      const q = query(kuponiRef, where("customerName", "==", customerName.trim()));
+      const snapshot = await getDocs(q);
+
+      const usage = {};
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const time = parseISO(data.time);
+
+        if (isSameMonth(time, now)) {
+          data.coupons.forEach((couponStr) => {
+            const [name, qtyStr] = couponStr.split(" x");
+            const qty = parseInt(qtyStr || "1", 10);
+            usage[name.trim()] = (usage[name.trim()] || 0) + qty;
+          });
+        }
+      });
+
+      setCustomerUsage(usage);
+      setCouponCheckDone(true);
+    } catch (err) {
+      console.error("Napaka pri preverjanju kuponov:", err);
+    }
+  };
+
   const handleCouponClick = (id) => {
     const coupon = couponList.find((c) => c.id === id);
     const currentQty = selectedCoupons[id] || 0;
+    const alreadyUsed = customerUsage[coupon.name] || 0;
 
-    if (currentQty < coupon.maxQuantity) {
+    if (alreadyUsed + currentQty < coupon.maxQuantity) {
       setSelectedCoupons({ ...selectedCoupons, [id]: currentQty + 1 });
-    } else {
-      const newSelection = { ...selectedCoupons };
-      delete newSelection[id];
-      setSelectedCoupons(newSelection);
     }
   };
 
@@ -118,7 +150,9 @@ function UradneUre() {
 
       setCustomerName("");
       setSelectedCoupons({});
+      setCustomerUsage({});
       setCouponDialogOpen(false);
+      setCouponCheckDone(false);
     } catch (err) {
       console.error("Napaka pri shranjevanju kuponov:", err);
     }
@@ -213,32 +247,48 @@ function UradneUre() {
             label="Ime stranke"
             margin="dense"
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            onChange={(e) => {
+              setCustomerName(e.target.value);
+              setCouponCheckDone(false);
+            }}
+            onBlur={checkCustomerCoupons}
           />
           <Grid container spacing={2} sx={{ mt: 2 }}>
-            {couponList.map((coupon) => (
-              <Grid item xs={6} key={coupon.id}>
-                <MDBox
-                  component="button"
-                  onClick={() => handleCouponClick(coupon.id)}
-                  sx={{
-                    width: "100%",
-                    height: "120px",
-                    backgroundColor: "#f0f0f0",
-                    backgroundImage: `url(${coupon.image})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    border: selectedCoupons[coupon.id] ? "4px solid #1976d2" : "none",
-                    borderRadius: "12px",
-                    cursor: "pointer",
-                    boxShadow: 2,
-                  }}
-                />
-                <MDTypography align="center" variant="body2" sx={{ mt: 1 }}>
-                  {coupon.name} {selectedCoupons[coupon.id] ? `x${selectedCoupons[coupon.id]}` : ""}
-                </MDTypography>
-              </Grid>
-            ))}
+            {couponList.map((coupon) => {
+              const alreadyUsed = customerUsage[coupon.name] || 0;
+              const maxReached = alreadyUsed >= coupon.maxQuantity;
+
+              return (
+                <Grid item xs={6} key={coupon.id}>
+                  <MDBox
+                    component="button"
+                    onClick={() => !maxReached && handleCouponClick(coupon.id)}
+                    sx={{
+                      width: "100%",
+                      height: "120px",
+                      backgroundColor: maxReached ? "#ddd" : "#f0f0f0",
+                      backgroundImage: `url(${coupon.image})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      border: selectedCoupons[coupon.id] ? "4px solid #1976d2" : "none",
+                      borderRadius: "12px",
+                      cursor: maxReached ? "not-allowed" : "pointer",
+                      opacity: maxReached ? 0.5 : 1,
+                      boxShadow: 2,
+                    }}
+                    title={
+                      maxReached
+                        ? `Stranka je že dosegla mesečno mejo za "${coupon.name}"`
+                        : `Klikni za dodajanje "${coupon.name}"`
+                    }
+                  />
+                  <MDTypography align="center" variant="body2" sx={{ mt: 1 }}>
+                    {coupon.name}{" "}
+                    {selectedCoupons[coupon.id] ? `x${selectedCoupons[coupon.id]}` : ""}
+                  </MDTypography>
+                </Grid>
+              );
+            })}
           </Grid>
         </DialogContent>
         <DialogActions>
