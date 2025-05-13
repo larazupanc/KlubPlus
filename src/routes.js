@@ -47,7 +47,7 @@ const routes = [
     name: "Koledar",
     key: "koledar",
     icon: <Icon fontSize="small">event_note</Icon>,
-    route: "/koledat",
+    route: "/koledar",
     component: <Koledar />,
   },
   {
@@ -57,6 +57,20 @@ const routes = [
     icon: <Icon fontSize="small">person</Icon>,
     route: "/profile",
     component: <Profile />,
+  },
+  {
+    type: "route",
+    name: "Sign In",
+    key: "sign-in",
+    route: "/authentication/sign-in",
+    component: <SignIn />,
+  },
+  {
+    type: "route",
+    name: "Sign Up",
+    key: "sign-up",
+    route: "/authentication/sign-up",
+    component: <SignUp />,
   },
 ];
 
