@@ -21,12 +21,19 @@ import {
 
 import { useMaterialUIController, setTransparentNavbar } from "context";
 
+// Firebase import
+import { signOut } from "firebase/auth";
+import { auth } from "firebaseConfig";
+import { useNavigate } from "react-router-dom";
+
 function DashboardNavbar({ absolute, light, isMini }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useMaterialUIController();
   const { fixedNavbar, darkMode, transparentNavbar } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     setNavbarType(fixedNavbar ? "sticky" : "static");
@@ -50,6 +57,15 @@ function DashboardNavbar({ absolute, light, isMini }) {
       <NotificationItem icon={<Icon>shopping_cart</Icon>} title="Payment completed" />
     </Menu>
   );
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      navigate("/authentication/sign-in");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   const iconsStyle = ({ palette: { dark, white, text }, functions: { rgba } }) => ({
     color: () => {
@@ -87,6 +103,16 @@ function DashboardNavbar({ absolute, light, isMini }) {
             <Icon sx={iconsStyle}>notifications</Icon>
           </IconButton>
           {renderMenu()}
+          {/* Logout Button */}
+          <IconButton
+            size="small"
+            disableRipple
+            color="inherit"
+            sx={navbarIconButton}
+            onClick={handleLogout}
+          >
+            <Icon sx={iconsStyle}>logout</Icon>
+          </IconButton>
         </MDBox>
       </Toolbar>
     </AppBar>

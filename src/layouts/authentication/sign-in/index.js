@@ -1,23 +1,65 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
+import { auth } from "firebaseConfig";
+
 import Card from "@mui/material/Card";
 import Switch from "@mui/material/Switch";
-import Grid from "@mui/material/Grid";
-import MuiLink from "@mui/material/Link";
-import FacebookIcon from "@mui/icons-material/Facebook";
-import GitHubIcon from "@mui/icons-material/GitHub";
-import GoogleIcon from "@mui/icons-material/Google";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
 import BasicLayout from "layouts/authentication/components/BasicLayout";
+
 import bgImage from "assets/images/ozadje.jpg";
 
 function Basic() {
   const [rememberMe, setRememberMe] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleSetRememberMe = () => setRememberMe(!rememberMe);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password) {
+      setError("Vnesi email in geslo.");
+      return;
+    }
+
+    try {
+      // Set Firebase Auth persistence based on "remember me"
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
+      // Attempt sign-in
+      await signInWithEmailAndPassword(auth, email, password);
+
+      // Redirect on success
+      navigate("/dashboard");
+    } catch (err) {
+      // Firebase error handling
+      switch (err.code) {
+        case "auth/user-not-found":
+          setError("Uporabnik ne obstaja.");
+          break;
+        case "auth/wrong-password":
+          setError("Napačno geslo.");
+          break;
+        case "auth/invalid-email":
+          setError("Neveljaven email.");
+          break;
+        default:
+          setError("Prišlo je do napake. Poskusi znova.");
+      }
+    }
+  };
 
   return (
     <BasicLayout image={bgImage}>
@@ -38,27 +80,46 @@ function Basic() {
           </MDTypography>
         </MDBox>
         <MDBox pt={4} pb={3} px={3}>
-          <MDBox component="form" role="form">
+          <form onSubmit={handleLogin}>
             <MDBox mb={2}>
-              <MDInput type="email" label="Email" fullWidth />
+              <MDInput
+                type="email"
+                label="Email"
+                fullWidth
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </MDBox>
             <MDBox mb={2}>
-              <MDInput type="password" label="Password" fullWidth />
+              <MDInput
+                type="password"
+                label="Geslo"
+                fullWidth
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </MDBox>
             <MDBox display="flex" alignItems="center" ml={-1}>
-              <Switch checked={rememberMe} onChange={handleSetRememberMe} />
+              <Switch checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} />
               <MDTypography
                 variant="button"
                 fontWeight="regular"
                 color="text"
-                onClick={handleSetRememberMe}
+                onClick={() => setRememberMe(!rememberMe)}
                 sx={{ cursor: "pointer", userSelect: "none", ml: -1 }}
               >
-                &nbsp;&nbsp;Zapomni si me
+                  Zapomni si me
               </MDTypography>
             </MDBox>
+            {error && (
+              <MDBox mt={2}>
+                <MDTypography variant="caption" color="error">
+                  {error}
+                </MDTypography>
+              </MDBox>
+            )}
             <MDBox mt={4} mb={1}>
-              <MDButton variant="gradient" color="info" fullWidth>
+              <MDButton type="submit" variant="gradient" color="info" fullWidth>
                 Prijava
               </MDButton>
             </MDBox>
@@ -76,7 +137,7 @@ function Basic() {
                 </MDTypography>
               </MDTypography>
             </MDBox>
-          </MDBox>
+          </form>
         </MDBox>
       </Card>
     </BasicLayout>
