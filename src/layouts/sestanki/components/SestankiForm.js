@@ -19,7 +19,6 @@ export default function SestankiForm({ onAdd, editingMeeting }) {
     startTime: "",
   });
 
-  // When editingMeeting changes, populate form
   useEffect(() => {
     if (editingMeeting) {
       setFormData({
@@ -53,15 +52,13 @@ export default function SestankiForm({ onAdd, editingMeeting }) {
     e.preventDefault();
     try {
       if (editingMeeting) {
-        // Update existing meeting
         const docRef = doc(db, "sestanki", editingMeeting.id);
         await updateDoc(docRef, formData);
       } else {
-        // Add new meeting
         await addDoc(collection(db, "sestanki"), formData);
       }
 
-      onAdd(); // Refresh data
+      onAdd();
       setFormData({
         title: "",
         leader: "",
@@ -158,5 +155,5 @@ export default function SestankiForm({ onAdd, editingMeeting }) {
 
 SestankiForm.propTypes = {
   onAdd: PropTypes.func.isRequired,
-  editingMeeting: PropTypes.object, // Can be null or an object
+  editingMeeting: PropTypes.object,
 };

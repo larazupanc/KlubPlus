@@ -12,6 +12,7 @@ import MDTypography from "components/MDTypography";
 export default function ProjektiForm({ onAdd, editingProject }) {
   const [formData, setFormData] = useState({
     naziv: "",
+    stevilo: "",
     opis: "",
     vodja: "",
     datum: "",
@@ -25,6 +26,7 @@ export default function ProjektiForm({ onAdd, editingProject }) {
     if (editingProject) {
       setFormData({
         naziv: editingProject.naziv || "",
+        stevilo: editingProject.stevilo || "",
         opis: editingProject.opis || "",
         vodja: editingProject.vodja || "",
         datum: editingProject.datum || "",
@@ -36,6 +38,7 @@ export default function ProjektiForm({ onAdd, editingProject }) {
     } else {
       setFormData({
         naziv: "",
+        stevilo: "",
         opis: "",
         vodja: "",
         datum: "",
@@ -79,6 +82,7 @@ export default function ProjektiForm({ onAdd, editingProject }) {
         <Grid container spacing={2}>
           {[
             { label: "Naziv", name: "naziv" },
+            { label: "Številka projekta", name: "stevilo" },
             { label: "Opis", name: "opis" },
             { label: "Vodja", name: "vodja" },
             { label: "Datum", name: "datum", type: "date" },

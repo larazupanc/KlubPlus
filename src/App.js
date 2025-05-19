@@ -15,7 +15,6 @@ import { useMaterialUIController, setMiniSidenav, setOpenConfigurator } from "co
 import brandWhite from "assets/images/logo-white.png";
 import brandDark from "assets/images/lak-logo.png";
 
-// 🔒 Add these
 import { AuthProvider } from "context/AuthContext";
 import ProtectedRoute from "ProtectedRoute";
 

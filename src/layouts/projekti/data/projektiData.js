@@ -4,6 +4,38 @@ import { db } from "firebaseConfig";
 import IconButton from "@mui/material/IconButton";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DownloadIcon from "@mui/icons-material/Download";
+
+import PizZip from "pizzip";
+import Docxtemplater from "docxtemplater";
+import { saveAs } from "file-saver";
+
+const handleGenerateReport = async (project) => {
+  try {
+    const response = await fetch("/Projektno_porocilo.docx");
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = new PizZip(arrayBuffer);
+    const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+    doc.setData({
+      naziv: project.naziv || "",
+      stevilo: project.stevilo || "",
+      opis: project.opis || "",
+      vodja: project.vodja || "",
+      datum: project.datum || "",
+      lokacija: project.lokacija || "",
+      ura: project.ura || "",
+      drugeInformacije: project.drugeInformacije || "",
+      podrocje: project.podrocje || "",
+    });
+
+    doc.render();
+    const blob = doc.getZip().generate({ type: "blob" });
+    saveAs(blob, `Projektno_porocilo_${project.stevilo || "neznano"}.docx`);
+  } catch (err) {
+    console.error("Napaka pri generiranju poročila:", err);
+  }
+};
 
 export default function useProjektiData(refreshKey, onEdit) {
   const [data, setData] = useState({ columns: [], rows: [] });
@@ -24,25 +56,21 @@ export default function useProjektiData(refreshKey, onEdit) {
     const fetchData = async () => {
       const querySnapshot = await getDocs(collection(db, "projekti"));
       const rows = querySnapshot.docs.map((docSnap) => {
-        const { naziv, opis, vodja, datum, lokacija, ura, drugeInformacije, podrocje } =
-          docSnap.data();
+        const project = docSnap.data();
+
         return {
           id: docSnap.id,
-          naziv,
-          opis,
-          vodja,
-          datum,
-          lokacija,
-          ura,
-          drugeInformacije,
-          podrocje,
+          ...project,
           action: (
             <>
-              <IconButton onClick={() => onEdit({ id: docSnap.id, ...docSnap.data() })}>
+              <IconButton onClick={() => onEdit({ id: docSnap.id, ...project })}>
                 <EditIcon />
               </IconButton>
               <IconButton onClick={() => handleDelete(docSnap.id)}>
                 <DeleteIcon />
+              </IconButton>
+              <IconButton onClick={() => handleGenerateReport({ id: docSnap.id, ...project })}>
+                <DownloadIcon />
               </IconButton>
             </>
           ),
@@ -52,6 +80,7 @@ export default function useProjektiData(refreshKey, onEdit) {
       setData({
         columns: [
           { Header: "Naziv", accessor: "naziv", align: "left" },
+          { Header: "Število projekta", accessor: "stevilo", align: "left" },
           { Header: "Opis", accessor: "opis", align: "left" },
           { Header: "Vodja", accessor: "vodja", align: "left" },
           { Header: "Datum", accessor: "datum", align: "left" },

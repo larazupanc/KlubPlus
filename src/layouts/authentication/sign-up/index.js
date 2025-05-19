@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
-import { auth, db } from "firebaseConfig"; // 🔥 Import Firebase Auth and Firestore
+import { auth, db } from "firebaseConfig";
 
 import Card from "@mui/material/Card";
 import MDBox from "components/MDBox";
@@ -20,11 +20,13 @@ function Cover() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const navigate = useNavigate();
 
   const handleRegister = async () => {
     setError("");
+    setSuccessMessage("");
     if (!name || !email || !password) {
       setError("Vsa polja so obvezna.");
       return;
@@ -32,18 +34,18 @@ function Cover() {
 
     try {
       setLoading(true);
-      // Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // Optionally save extra info to Firestore
       await setDoc(doc(db, "uporabniki", user.uid), {
         name,
         email,
         createdAt: new Date().toISOString(),
+        approved: false,
       });
 
-      navigate("/"); // Redirect to home or calendar
+      setSuccessMessage(
+        "Vaš račun je v postopku odobritve. Opravičujemo se za morebitne nevšečnosti."
+      );
     } catch (err) {
       setError(err.message || "Napaka pri registraciji.");
     } finally {
@@ -105,6 +107,12 @@ function Cover() {
             {error && (
               <MDTypography color="error" variant="caption" display="block" mb={2}>
                 {error}
+              </MDTypography>
+            )}
+
+            {successMessage && (
+              <MDTypography color="success" variant="caption" display="block" mb={2}>
+                {successMessage}
               </MDTypography>
             )}
 

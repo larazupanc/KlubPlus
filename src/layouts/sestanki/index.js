@@ -17,7 +17,7 @@ function Sestanki() {
   const [editingMeeting, setEditingMeeting] = useState(null);
 
   const handleAddMeeting = () => {
-    setEditingMeeting(null); // Clear editing state
+    setEditingMeeting(null);
     setRefreshKey((prev) => prev + 1);
   };
 

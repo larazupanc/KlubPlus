@@ -8,6 +8,8 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import DataTable from "examples/Tables/DataTable";
+import { useNavigate } from "react-router-dom";
+import Button from "@mui/material/Button";
 
 import useProjektiData from "./data/projektiData";
 import ProjektiForm from "./components/ProjektiForm";
@@ -16,6 +18,7 @@ export default function Projekti() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingProject, setEditingProject] = useState(null);
   const { columns, rows } = useProjektiData(refreshKey, setEditingProject);
+  const navigate = useNavigate();
 
   const handleAddOrUpdate = () => {
     setRefreshKey((prev) => prev + 1);
@@ -25,6 +28,20 @@ export default function Projekti() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
+
+      <Button
+        variant="contained"
+        color="info"
+        onClick={() =>
+          window.open(
+            "https://drive.google.com/drive/folders/1JhrreQM3fF9CJDTHk-dB_JVpKPFYCoLX",
+            "_blank"
+          )
+        }
+      >
+        Pojdi na Google Drive
+      </Button>
+
       <MDBox pt={6} pb={3}>
         <Grid container spacing={6}>
           <Grid item xs={12}>

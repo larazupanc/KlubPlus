@@ -6,6 +6,8 @@ import Sestanki from "layouts/sestanki";
 import Projekti from "layouts/projekti";
 import Ure from "layouts/ure";
 import Koledar from "layouts/koledar";
+import Izplacila from "layouts/izplacila";
+import UrediVloge from "layouts/vloge";
 
 import Icon from "@mui/material/Icon";
 
@@ -57,6 +59,22 @@ const routes = [
     icon: <Icon fontSize="small">person</Icon>,
     route: "/profile",
     component: <Profile />,
+  },
+  {
+    type: "collapse",
+    name: "Izplacila",
+    key: "izplacila",
+    icon: <Icon fontSize="small">payments</Icon>,
+    route: "/izplacila",
+    component: <Izplacila />,
+  },
+  {
+    type: "collapse",
+    name: "UrediVloge",
+    key: "urediVloge",
+    icon: <Icon fontSize="small">payments</Icon>,
+    route: "/vloge",
+    component: <UrediVloge />,
   },
   {
     type: "route",

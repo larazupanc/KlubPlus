@@ -101,8 +101,7 @@ function Koledar() {
   const handleDayClick = (date) => {
     const today = new Date();
     if (!isSameMonth(date, currentMonth)) return;
-    if (date < startOfDay(today)) return; // 🚫 Skip past dates
-
+    if (date < startOfDay(today)) return;
     const weekday = getDay(date);
     const shifted = weekday === 0 ? 6 : weekday - 1;
     const isAllowed = allowedSlots[shifted];

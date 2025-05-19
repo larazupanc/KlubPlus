@@ -12,6 +12,7 @@ import MDAvatar from "components/MDAvatar";
 import breakpoints from "assets/theme/base/breakpoints";
 import burceMars from "assets/images/ozadje.jpg";
 import backgroundImage from "assets/images/ozadje.jpg";
+import UserApprovalPanel from "../potrditev";
 
 function Header({ children }) {
   const [tabsOrientation, setTabsOrientation] = useState("horizontal");
@@ -73,7 +74,9 @@ function Header({ children }) {
               </MDTypography>
             </MDBox>
           </Grid>
-          <Grid item xs={12} md={6} lg={4} sx={{ ml: "auto" }}></Grid>
+          <Grid item xs={12} md={6} lg={4} sx={{ ml: "auto" }}>
+            {" "}
+          </Grid>
         </Grid>
         {children}
       </Card>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   signInWithEmailAndPassword,
@@ -6,7 +6,8 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
 } from "firebase/auth";
-import { auth } from "firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "firebaseConfig";
 
 import Card from "@mui/material/Card";
 import Switch from "@mui/material/Switch";
@@ -23,11 +24,13 @@ function Basic() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccessMessage("");
 
     if (!email || !password) {
       setError("Vnesi email in geslo.");
@@ -35,16 +38,23 @@ function Basic() {
     }
 
     try {
-      // Set Firebase Auth persistence based on "remember me"
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
-      // Attempt sign-in
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      // Redirect on success
-      navigate("/dashboard");
+      const userDoc = await getDoc(doc(db, "uporabniki", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (!userData.approved) {
+          setError("Vaš račun je v postopku odobritve. Opravičujemo se za morebitne nevšečnosti.");
+        } else {
+          navigate("/dashboard");
+        }
+      } else {
+        setError("Uporabnik ne obstaja.");
+      }
     } catch (err) {
-      // Firebase error handling
       switch (err.code) {
         case "auth/user-not-found":
           setError("Uporabnik ne obstaja.");
@@ -56,7 +66,7 @@ function Basic() {
           setError("Neveljaven email.");
           break;
         default:
-          setError("Prišlo je do napake. Poskusi znova.");
+          setError("Napačno geslo ali Email. Poskusi znova.");
       }
     }
   };
@@ -115,6 +125,13 @@ function Basic() {
               <MDBox mt={2}>
                 <MDTypography variant="caption" color="error">
                   {error}
+                </MDTypography>
+              </MDBox>
+            )}
+            {successMessage && (
+              <MDBox mt={2}>
+                <MDTypography variant="caption" color="success">
+                  {successMessage}
                 </MDTypography>
               </MDBox>
             )}
