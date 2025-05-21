@@ -1,8 +1,4 @@
 import React, { useEffect, useState } from "react";
-
-import { startOfDay } from "date-fns";
-import MDButton from "components/MDButton";
-
 import {
   startOfMonth,
   endOfMonth,
@@ -14,8 +10,8 @@ import {
   addMonths,
   subMonths,
   getDay,
+  startOfDay,
 } from "date-fns";
-
 import {
   Grid,
   Typography,
@@ -29,12 +25,10 @@ import {
   Paper,
 } from "@mui/material";
 import { ArrowBack, ArrowForward } from "@mui/icons-material";
-
 import * as XLSX from "xlsx";
-
 import { db } from "firebaseConfig";
 import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
-
+import MDButton from "components/MDButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
@@ -49,6 +43,7 @@ function Koledar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
   const [bookedDates, setBookedDates] = useState([]);
+  const [sestanki, setSestanki] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [name, setName] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
@@ -56,6 +51,7 @@ function Koledar() {
   useEffect(() => {
     generateCalendar();
     fetchBookings();
+    fetchSestanki();
   }, [currentMonth]);
 
   const generateCalendar = () => {
@@ -87,6 +83,12 @@ function Koledar() {
     setBookedDates(booked);
   };
 
+  const fetchSestanki = async () => {
+    const snapshot = await getDocs(collection(db, "sestanki"));
+    const meetings = snapshot.docs.map((doc) => doc.data());
+    setSestanki(meetings);
+  };
+
   const isBookable = (date) => {
     const day = getDay(date);
     return allowedSlots[day - 1] !== undefined;
@@ -96,6 +98,11 @@ function Koledar() {
     const dateStr = format(date, "yyyy-MM-dd");
     const match = bookedDates.find((b) => b.date === dateStr);
     return match?.name || null;
+  };
+
+  const getSestankiForDate = (date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return sestanki.filter((s) => s.date === dateStr);
   };
 
   const handleDayClick = (date) => {
@@ -178,22 +185,26 @@ function Koledar() {
           const shifted = weekday === 0 ? 6 : weekday - 1;
           const bookable = allowedSlots[shifted];
           const bookedName = getBookedName(date);
+          const meetings = getSestankiForDate(date);
 
           return (
             <Grid item xs={1.7} key={index}>
               <Paper
                 sx={{
-                  height: 100,
+                  height: 120,
                   p: 1,
                   backgroundColor: !inMonth
                     ? "white"
                     : bookedName
                     ? "#ffcdd2"
+                    : meetings.length
+                    ? "#bbdefb"
                     : bookable
                     ? "#c8e6c9"
                     : "#ffffff",
                   visibility: inMonth ? "visible" : "hidden",
                   cursor: bookable && !bookedName ? "pointer" : "default",
+                  overflow: "hidden",
                 }}
                 elevation={3}
                 onClick={() => handleDayClick(date)}
@@ -201,16 +212,31 @@ function Koledar() {
                 <Typography align="center" variant="subtitle2">
                   {format(date, "d")}
                 </Typography>
-                {inMonth && bookable && (
+
+                {bookable && inMonth && (
                   <Typography align="center" variant="caption" display="block">
                     {allowedSlots[shifted].label}
                   </Typography>
                 )}
-                {inMonth && bookedName && (
+
+                {bookedName && inMonth && (
                   <Typography align="center" variant="caption" display="block">
                     {bookedName}
                   </Typography>
                 )}
+
+                {meetings.length > 0 &&
+                  meetings.map((m, i) => (
+                    <Typography
+                      key={i}
+                      align="center"
+                      variant="caption"
+                      display="block"
+                      sx={{ fontSize: "0.65rem", mt: 0.5 }}
+                    >
+                      📌 {m.title} ({m.startTime})
+                    </Typography>
+                  ))}
               </Paper>
             </Grid>
           );

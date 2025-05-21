@@ -10,7 +10,6 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { saveAs } from "file-saver";
 
-// --- Generate REPORT ---
 const handleGenerateReport = async (project) => {
   try {
     const response = await fetch("/Projektno_porocilo.docx");
@@ -41,7 +40,6 @@ const handleGenerateReport = async (project) => {
   }
 };
 
-// --- Generate PLAN ---
 const handleGeneratePlan = async (project) => {
   try {
     const response = await fetch("/Projektni_nacrt.docx");

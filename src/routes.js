@@ -8,8 +8,9 @@ import Ure from "layouts/ure";
 import Koledar from "layouts/koledar";
 import Izplacila from "layouts/izplacila";
 import UrediVloge from "layouts/vloge";
-
+import KonstantePage from "layouts/konstante";
 import Icon from "@mui/material/Icon";
+import PodrobnostiPlacil from "layouts/podrobnostiplacil";
 
 const routes = [
   {
@@ -30,9 +31,17 @@ const routes = [
   },
   {
     type: "collapse",
+    name: "Podrobnosti",
+    key: "podrobnosti",
+    icon: <Icon fontSize="small">notifications</Icon>,
+    route: "/podrobnosti",
+    component: <PodrobnostiPlacil />,
+  },
+  {
+    type: "collapse",
     name: "Sestanki",
     key: "sestanki",
-    icon: <Icon fontSize="small">event_note</Icon>,
+    icon: <Icon fontSize="small">work</Icon>,
     route: "/sestanki",
     component: <Sestanki />,
   },
@@ -40,7 +49,7 @@ const routes = [
     type: "collapse",
     name: "Projekti",
     key: "projekti",
-    icon: <Icon fontSize="small">event_note</Icon>,
+    icon: <Icon fontSize="small">task</Icon>,
     route: "/projekti",
     component: <Projekti />,
   },
@@ -48,33 +57,39 @@ const routes = [
     type: "collapse",
     name: "Koledar",
     key: "koledar",
-    icon: <Icon fontSize="small">event_note</Icon>,
+    icon: <Icon fontSize="small">calendar_month</Icon>,
     route: "/koledar",
     component: <Koledar />,
   },
   {
-    type: "collapse",
+    type: "route",
     name: "Profil",
     key: "profile",
-    icon: <Icon fontSize="small">person</Icon>,
     route: "/profile",
     component: <Profile />,
   },
   {
     type: "collapse",
-    name: "Izplacila",
+    name: "Mesečna izplačila",
     key: "izplacila",
-    icon: <Icon fontSize="small">payments</Icon>,
+    icon: <Icon fontSize="small">account_balance_wallet </Icon>,
     route: "/izplacila",
     component: <Izplacila />,
   },
   {
     type: "collapse",
-    name: "UrediVloge",
+    name: "Vloge",
     key: "urediVloge",
-    icon: <Icon fontSize="small">payments</Icon>,
+    icon: <Icon fontSize="small">groups</Icon>,
     route: "/vloge",
     component: <UrediVloge />,
+  },
+  {
+    type: "route",
+    name: "Konstante",
+    key: "konstante",
+    route: "/konstante",
+    component: <KonstantePage />,
   },
   {
     type: "route",

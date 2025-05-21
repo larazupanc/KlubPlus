@@ -17,7 +17,6 @@ import Footer from "examples/Footer";
 
 import { db } from "firebaseConfig";
 import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
-
 import { parseISO, isSameMonth } from "date-fns";
 
 import img1 from "assets/images/1.png";
@@ -47,6 +46,9 @@ function UradneUre() {
   const [selectedCoupons, setSelectedCoupons] = useState({});
   const [customerUsage, setCustomerUsage] = useState({});
   const [couponCheckDone, setCouponCheckDone] = useState(false);
+  const [showCustomerNameDialog, setShowCustomerNameDialog] = useState(false);
+  const [issuedCouponsLog, setIssuedCouponsLog] = useState([]);
+  const [showSummaryDialog, setShowSummaryDialog] = useState(false);
 
   useEffect(() => {
     let interval;
@@ -59,36 +61,50 @@ function UradneUre() {
     return () => clearInterval(interval);
   }, [startTime]);
 
-  const handleStartClick = () => {
-    const now = new Date().toISOString();
-    setStartTime(now);
-    setElapsedTime(0);
-  };
-
-  const handleEndClick = () => setOpenDialog(true);
+  const handleStartClick = () => setOpenDialog(true);
 
   const handleDialogClose = async () => {
     if (!name.trim()) return;
-    const endTime = new Date().toISOString();
-    const lengthInSeconds = Math.floor((new Date(endTime) - new Date(startTime)) / 1000);
 
-    try {
-      await addDoc(collection(db, "uradneUre"), {
-        userName: name.trim(),
-        startTime,
-        endTime,
-        lengthInSeconds,
-        date: startTime.split("T")[0],
-      });
-    } catch (err) {
-      console.error("Napaka pri shranjevanju:", err);
+    if (!startTime) {
+      const now = new Date().toISOString();
+      setStartTime(now);
+      setElapsedTime(0);
+    } else {
+      const endTime = new Date().toISOString();
+      const lengthInSeconds = Math.floor((new Date(endTime) - new Date(startTime)) / 1000);
+
+      try {
+        await addDoc(collection(db, "uradneUre"), {
+          userName: name.trim(),
+          startTime,
+          endTime,
+          lengthInSeconds,
+          date: startTime.split("T")[0],
+        });
+      } catch (err) {
+        console.error("Napaka pri shranjevanju:", err);
+      }
+
+      clearInterval(timerInterval);
+      setStartTime(null);
+      setElapsedTime(0);
+      setIssuedCouponsLog([]);
     }
 
-    clearInterval(timerInterval);
-    setStartTime(null);
-    setElapsedTime(0);
     setOpenDialog(false);
     setName("");
+  };
+
+  const handleCouponStart = () => {
+    setShowCustomerNameDialog(true);
+  };
+
+  const handleCustomerNameSubmit = () => {
+    if (!customerName.trim()) return;
+    checkCustomerCoupons();
+    setCouponDialogOpen(true);
+    setShowCustomerNameDialog(false);
   };
 
   const checkCustomerCoupons = async () => {
@@ -101,7 +117,6 @@ function UradneUre() {
       const snapshot = await getDocs(q);
 
       const usage = {};
-
       snapshot.forEach((doc) => {
         const data = doc.data();
         const time = parseISO(data.time);
@@ -148,6 +163,11 @@ function UradneUre() {
         coupons: selectedDetails,
       });
 
+      setIssuedCouponsLog((prev) => [
+        ...prev,
+        { customer: customerName.trim(), coupons: selectedDetails },
+      ]);
+
       setCustomerName("");
       setSelectedCoupons({});
       setCustomerUsage({});
@@ -156,6 +176,10 @@ function UradneUre() {
     } catch (err) {
       console.error("Napaka pri shranjevanju kuponov:", err);
     }
+  };
+
+  const handleEndClick = () => {
+    setShowSummaryDialog(true);
   };
 
   const formatTime = (seconds) => {
@@ -186,7 +210,7 @@ function UradneUre() {
                     <MDButton
                       variant="outlined"
                       color="info"
-                      onClick={() => setCouponDialogOpen(true)}
+                      onClick={handleCouponStart}
                       sx={{ mt: 2, mb: 2 }}
                     >
                       Izdaj kupone
@@ -213,9 +237,9 @@ function UradneUre() {
       </MDBox>
       <Footer />
 
-      {/* Zaključek ure dialog */}
+      {/* Operator name input dialog (start or finish) */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Zaključi uradne ure</DialogTitle>
+        <DialogTitle>{startTime ? "Zaključi uradne ure" : "Začni uradne ure"}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -233,6 +257,26 @@ function UradneUre() {
         </DialogActions>
       </Dialog>
 
+      {/* Customer name prompt dialog */}
+      <Dialog open={showCustomerNameDialog} onClose={() => setShowCustomerNameDialog(false)}>
+        <DialogTitle>Vnesi ime stranke</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Ime stranke"
+            fullWidth
+            variant="standard"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowCustomerNameDialog(false)}>Prekliči</Button>
+          <Button onClick={handleCustomerNameSubmit}>Naprej</Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Kuponi dialog */}
       <Dialog
         open={couponDialogOpen}
@@ -242,17 +286,6 @@ function UradneUre() {
       >
         <DialogTitle>Izdaj kupone</DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            label="Ime stranke"
-            margin="dense"
-            value={customerName}
-            onChange={(e) => {
-              setCustomerName(e.target.value);
-              setCouponCheckDone(false);
-            }}
-            onBlur={checkCustomerCoupons}
-          />
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {couponList.map((coupon) => {
               const alreadyUsed = customerUsage[coupon.name] || 0;
@@ -276,11 +309,6 @@ function UradneUre() {
                       opacity: maxReached ? 0.5 : 1,
                       boxShadow: 2,
                     }}
-                    title={
-                      maxReached
-                        ? `Stranka je že dosegla mesečno mejo za "${coupon.name}"`
-                        : `Klikni za dodajanje "${coupon.name}"`
-                    }
                   />
                   <MDTypography align="center" variant="body2" sx={{ mt: 1 }}>
                     {coupon.name}{" "}
@@ -294,6 +322,43 @@ function UradneUre() {
         <DialogActions>
           <Button onClick={() => setCouponDialogOpen(false)}>Prekliči</Button>
           <Button onClick={handleSubmitCoupons}>Shrani</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Summary of issued coupons */}
+      <Dialog
+        open={showSummaryDialog}
+        onClose={() => setShowSummaryDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Povzetek izdanih kuponov</DialogTitle>
+        <DialogContent dividers>
+          {issuedCouponsLog.length === 0 ? (
+            <MDTypography>Ni izdanih kuponov.</MDTypography>
+          ) : (
+            issuedCouponsLog.map((entry, idx) => (
+              <MDBox key={idx} mb={2}>
+                <MDTypography variant="h6">{entry.customer}</MDTypography>
+                <ul>
+                  {entry.coupons.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              </MDBox>
+            ))
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowSummaryDialog(false)}>Prekliči</Button>
+          <Button
+            onClick={() => {
+              setShowSummaryDialog(false);
+              setOpenDialog(true);
+            }}
+          >
+            Potrdi in končaj
+          </Button>
         </DialogActions>
       </Dialog>
     </DashboardLayout>

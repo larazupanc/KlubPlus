@@ -19,8 +19,12 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
+import { useNavigate } from "react-router-dom";
 
 function Izplacila() {
+  const navigate = useNavigate();
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [vloge, setVloge] = useState([]);
   const [paymentStatus, setPaymentStatus] = useState({});
@@ -129,6 +133,12 @@ function Izplacila() {
           </Grid>
         </Grid>
       </MDBox>
+      <MDBox display="flex" justifyContent="center" py={2}>
+        <Button variant="contained" color="primary" onClick={() => navigate("/konstante")}>
+          Konstante
+        </Button>
+      </MDBox>
+
       <Footer />
     </DashboardLayout>
   );

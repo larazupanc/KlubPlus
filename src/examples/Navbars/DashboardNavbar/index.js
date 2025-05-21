@@ -88,7 +88,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
           <Breadcrumbs icon="home" title={route[route.length - 1]} route={route} light={light} />
         </MDBox>
         <MDBox sx={(theme) => navbarRow(theme, { isMini })}>
-          <Link to="/authentication/sign-in/basic">
+          <Link to="/profile">
             <IconButton sx={navbarIconButton} size="small" disableRipple>
               <Icon sx={iconsStyle}>account_circle</Icon>
             </IconButton>

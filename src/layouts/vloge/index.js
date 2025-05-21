@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
 import { db } from "firebaseConfig";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -9,6 +18,8 @@ import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
 import Card from "@mui/material/Card";
+import { onSnapshot } from "firebase/firestore";
+
 import Grid from "@mui/material/Grid";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -28,8 +39,9 @@ const predefinedRoles = [
   "blagajnik",
   "član",
   "svetnik",
-  "grafični oblikovalec",
-  "skrbnik socialnih omrežjih",
+  "grafičnioblikovalec",
+  "sociala",
+  "tajnik",
   "drugo",
 ];
 
@@ -45,6 +57,8 @@ function UrediVloge() {
   });
   const [editingId, setEditingId] = useState(null);
   const [editedData, setEditedData] = useState({});
+  const [isPaymentDone, setIsPaymentDone] = useState(false);
+  const [paymentMonthLabel, setPaymentMonthLabel] = useState("");
 
   const fetchVloge = async () => {
     const snapshot = await getDocs(collection(db, "vloge"));
@@ -62,21 +76,114 @@ function UrediVloge() {
     fetchVloge();
     fetchRetired();
   }, []);
+  useEffect(() => {
+    const konstanteRef = doc(db, "nastavitve", "konstante");
+
+    const unsubscribe = onSnapshot(konstanteRef, async (docSnap) => {
+      if (!docSnap.exists()) return;
+
+      const honorarji = docSnap.data().mesecniHonorarji || {};
+      const vlogeSnapshot = await getDocs(collection(db, "vloge"));
+
+      const updates = [];
+
+      vlogeSnapshot.forEach((vlogaDoc) => {
+        const v = vlogaDoc.data();
+        const id = vlogaDoc.id;
+        const correctAmount = honorarji[v.role];
+
+        if (correctAmount !== undefined && v.amount !== correctAmount) {
+          updates.push(updateDoc(doc(db, "vloge", id), { amount: correctAmount }));
+        }
+      });
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
+        fetchVloge();
+        console.log("Vloge amounts auto-synced with konstante.");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const previousMonthDate = new Date(currentYear, currentMonth - 1, 1);
+    const month = previousMonthDate.toLocaleString("default", { month: "long" });
+    const year = previousMonthDate.getFullYear();
+    const monthKey = `${year}-${String(previousMonthDate.getMonth() + 1).padStart(2, "0")}`;
+    setPaymentMonthLabel(`Izplačaj za mesec ${month.charAt(0).toUpperCase() + month.slice(1)}`);
+
+    const checkIfPaid = async () => {
+      const docSnap = await getDoc(doc(db, "placila", monthKey));
+      setIsPaymentDone(docSnap.exists());
+    };
+
+    if (today.getDate() === 1) {
+      checkIfPaid();
+    }
+  }, []);
+
+  const handleMonthlyPayment = async () => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+    const startOfPrevMonth = new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), 1);
+    const endOfPrevMonth = new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1, 0);
+    const monthKey = `${startOfPrevMonth.getFullYear()}-${String(
+      startOfPrevMonth.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+    const eligiblePayments = vloge.filter((v) => {
+      const startedAt = new Date(v.startedAt);
+      return startedAt <= startOfPrevMonth;
+    });
+
+    const paymentsData = {
+      month: startOfPrevMonth.toLocaleString("default", { month: "long" }),
+      year: startOfPrevMonth.getFullYear(),
+      createdAt: new Date().toISOString(),
+      payments: eligiblePayments.map((v) => ({
+        name: v.name,
+        email: v.email,
+        role: v.role,
+        amount: v.amount,
+      })),
+    };
+
+    await setDoc(doc(db, "placila", monthKey), paymentsData);
+    setIsPaymentDone(true);
+  };
 
   const handleAdd = async () => {
     const finalRole = newVloga.role === "drugo" ? newVloga.customRole : newVloga.role;
-    if (!newVloga.name || !newVloga.email || !finalRole || !newVloga.amount) return;
+    if (!newVloga.name || !newVloga.email || !finalRole) return;
 
-    await addDoc(collection(db, "vloge"), {
-      name: newVloga.name,
-      email: newVloga.email,
-      role: finalRole,
-      amount: Number(newVloga.amount),
-      startedAt: new Date().toISOString(),
-    });
+    try {
+      const konstanteDoc = await getDoc(doc(db, "nastavitve", "konstante"));
+      const konstanteData = konstanteDoc.exists() ? konstanteDoc.data() : {};
+      const honorarji = konstanteData.mesecniHonorarji || {};
+      const roleAmount = honorarji[finalRole] || 0;
 
-    setNewVloga({ name: "", email: "", role: "", customRole: "", amount: "" });
-    fetchVloge();
+      console.log("Dodajam vlogo za:", finalRole, "z zneskom:", roleAmount);
+
+      await addDoc(collection(db, "vloge"), {
+        name: newVloga.name,
+        email: newVloga.email,
+        role: finalRole,
+        amount: Number(roleAmount),
+        startedAt: new Date().toISOString(),
+      });
+
+      setNewVloga({ name: "", email: "", role: "", customRole: "", amount: "" });
+      fetchVloge();
+    } catch (error) {
+      console.error("Napaka pri pridobivanju zneska za vlogo:", error);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -119,7 +226,21 @@ function UrediVloge() {
                 Uredi vloge
               </MDTypography>
 
-              {/* Input Form */}
+              {}
+              {paymentMonthLabel && (
+                <MDBox mb={2}>
+                  <MDButton
+                    variant="contained"
+                    color={isPaymentDone ? "secondary" : "success"}
+                    disabled={isPaymentDone}
+                    onClick={handleMonthlyPayment}
+                  >
+                    {paymentMonthLabel}
+                  </MDButton>
+                </MDBox>
+              )}
+
+              {}
               <Grid container spacing={2} mb={3}>
                 <Grid item xs={12} md={3}>
                   <MDInput
@@ -160,15 +281,7 @@ function UrediVloge() {
                     />
                   )}
                 </Grid>
-                <Grid item xs={12} md={3}>
-                  <MDInput
-                    label="Znesek (€)"
-                    type="number"
-                    value={newVloga.amount}
-                    onChange={(e) => setNewVloga({ ...newVloga, amount: e.target.value })}
-                    fullWidth
-                  />
-                </Grid>
+
                 <Grid item xs={12}>
                   <MDButton variant="gradient" color="info" onClick={handleAdd}>
                     Dodaj vlogo
@@ -176,7 +289,7 @@ function UrediVloge() {
                 </Grid>
               </Grid>
 
-              {/* Active Roles Table */}
+              {}
               <TableContainer component={Paper}>
                 <Table>
                   <TableBody>
@@ -257,7 +370,7 @@ function UrediVloge() {
                 </Table>
               </TableContainer>
 
-              {/* Retired Roles Table */}
+              {}
               <MDTypography variant="h5" mt={4} mb={2}>
                 Upokojeni člani
               </MDTypography>

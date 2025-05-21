@@ -66,7 +66,6 @@ export default function App() {
       }
 
       if (route.route) {
-        // ✅ Only protect non-auth routes
         const isAuthRoute = route.route.startsWith("/authentication");
 
         return (
