@@ -22,20 +22,17 @@ import Switch from "@mui/material/Switch";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
+import UgodnostiPodrobnostiPage from "./UgodnostiPodrobnostiPage";
 
-function Izplacila() {
+function UgodnostiPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [placila, setPlacila] = useState([]);
-  const [projekti, setProjekti] = useState([]);
+  const [ugodnosti, setUgodnosti] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
-      const placilaSnap = await getDocs(collection(db, "placila"));
-      const projektiSnap = await getDocs(collection(db, "izplacani_projekti"));
-
-      setPlacila(placilaSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-      setProjekti(projektiSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const ugodnostiSnap = await getDocs(collection(db, "ugodnosti"));
+      setUgodnosti(ugodnostiSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     };
     fetchData();
   }, []);
@@ -44,82 +41,52 @@ function Izplacila() {
     2,
     "0"
   )}`;
-  const currentPlacilaDoc = placila.find((doc) => doc.id.includes(monthId));
-  const placilaInMonth = currentPlacilaDoc?.payments || [];
+  const currentUgodnostiDoc = ugodnosti.find((doc) => doc.id.includes(monthId));
+  const ugodnostiInMonth = currentUgodnostiDoc?.benefits || [];
 
-  const projektiInMonth = projekti.filter((item) => {
-    if (!item.timestamp?.toDate) return false;
-    const date = item.timestamp.toDate();
-    return (
-      date.getMonth() === currentMonth.getMonth() &&
-      date.getFullYear() === currentMonth.getFullYear()
-    );
-  });
-
-  const getAllPeopleCombined = () => {
+  const getAllPeople = () => {
     const peopleMap = new Map();
-
-    placilaInMonth.forEach(({ name, email, amount, izplacano }) => {
+    ugodnostiInMonth.forEach(({ name, email, amount, izplacano }) => {
       const key = `${name}|||${email}`;
       if (!peopleMap.has(key))
-        peopleMap.set(key, { name, email, placila: 0, projekti: 0, izplacano: false });
-      const person = peopleMap.get(key);
-      person.placila += amount;
-      person.izplacano = izplacano || false;
+        peopleMap.set(key, { name, email, amount, izplacano: izplacano || false });
     });
-
-    projektiInMonth.forEach(({ vodja, vodjaEmail, znesekTRR }) => {
-      const key = `${vodja}|||${vodjaEmail}`;
-      if (!peopleMap.has(key))
-        peopleMap.set(key, {
-          name: vodja,
-          email: vodjaEmail,
-          placila: 0,
-          projekti: 0,
-          izplacano: false,
-        });
-      peopleMap.get(key).projekti += znesekTRR;
-    });
-
     return Array.from(peopleMap.values());
   };
 
-  const combinedPeople = getAllPeopleCombined();
+  const people = getAllPeople();
 
   const toggleIzplacano = async (person) => {
-    const paymentIndex = placilaInMonth.findIndex(
-      (p) => p.name === person.name && p.email === person.email
+    const benefitIndex = ugodnostiInMonth.findIndex(
+      (b) => b.name === person.name && b.email === person.email
     );
-    if (paymentIndex === -1) return;
+    if (benefitIndex === -1) return;
 
-    placilaInMonth[paymentIndex].izplacano = !placilaInMonth[paymentIndex].izplacano;
+    ugodnostiInMonth[benefitIndex].izplacano = !ugodnostiInMonth[benefitIndex].izplacano;
 
-    // Update Firebase
-    const docRef = doc(db, "placila", currentPlacilaDoc.id);
+    const docRef = doc(db, "ugodnosti", currentUgodnostiDoc.id);
     await updateDoc(docRef, {
-      payments: placilaInMonth,
+      benefits: ugodnostiInMonth,
     });
 
-    // Update local state
-    setPlacila((prev) =>
+    setUgodnosti((prev) =>
       prev.map((doc) =>
-        doc.id === currentPlacilaDoc.id ? { ...doc, payments: [...placilaInMonth] } : doc
+        doc.id === currentUgodnostiDoc.id ? { ...doc, benefits: [...ugodnostiInMonth] } : doc
       )
     );
   };
 
   const downloadExcel = () => {
-    const data = combinedPeople.map((person) => ({
+    const data = people.map((person) => ({
       Ime: person.name,
       Email: person.email,
-      "Iz honorarjev (€)": person.placila.toFixed(2),
-      "Iz projektov (€)": person.projekti.toFixed(2),
-      "Skupaj (€)": (person.placila + person.projekti).toFixed(2),
+      "Znesek (€)": person.amount.toFixed(2),
+      Izplačano: person.izplacano ? "Da" : "Ne",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Podatki");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ugodnosti");
 
     const monthIdFormatted = `${currentMonth.getFullYear()}-${String(
       currentMonth.getMonth() + 1
@@ -127,7 +94,7 @@ function Izplacila() {
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
 
-    saveAs(blob, `Pregled_${monthIdFormatted}.xlsx`);
+    saveAs(blob, `Ugodnosti_${monthIdFormatted}.xlsx`);
   };
 
   const handlePrevMonth = () => {
@@ -155,16 +122,13 @@ function Izplacila() {
               <ArrowBackIosIcon />
             </IconButton>
             <MDTypography variant="h5">
-              Skupni podatki za {monthName} {year}
+              Ugodnosti za {monthName} {year}
             </MDTypography>
             <IconButton onClick={handleNextMonth}>
               <ArrowForwardIosIcon />
             </IconButton>
           </MDBox>
 
-          <MDTypography variant="h6" mb={1}>
-            Skupna plačila in projekti
-          </MDTypography>
           <TableContainer component={Paper}>
             <Table size="small">
               <TableHead>
@@ -176,13 +140,7 @@ function Izplacila() {
                     <strong>Email</strong>
                   </TableCell>
                   <TableCell>
-                    <strong>Iz honorarjev</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Iz projektov</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Skupaj</strong>
+                    <strong>Znesek</strong>
                   </TableCell>
                   <TableCell>
                     <strong>Izplačano</strong>
@@ -190,13 +148,11 @@ function Izplacila() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {combinedPeople.map((person) => (
+                {people.map((person) => (
                   <TableRow key={person.email}>
                     <TableCell>{person.name}</TableCell>
                     <TableCell>{person.email}</TableCell>
-                    <TableCell>{person.placila.toFixed(2)} €</TableCell>
-                    <TableCell>{person.projekti.toFixed(2)} €</TableCell>
-                    <TableCell>{(person.placila + person.projekti).toFixed(2)} €</TableCell>
+                    <TableCell>{person.amount.toFixed(2)} €</TableCell>
                     <TableCell>
                       <Switch
                         checked={person.izplacano}
@@ -211,7 +167,7 @@ function Izplacila() {
           </TableContainer>
 
           <MDBox display="flex" justifyContent="space-between" mt={4}>
-            <MDButton color="info" onClick={() => navigate("/podrobnosti")}>
+            <MDButton color="info" onClick={() => navigate("/ugodnosti/podrobnosti")}>
               Poglej podrobnosti
             </MDButton>
             <MDButton color="success" onClick={downloadExcel}>
@@ -225,4 +181,4 @@ function Izplacila() {
   );
 }
 
-export default Izplacila;
+export default UgodnostiPage;

@@ -6,6 +6,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import ConfiguratorRoot from "examples/Configurator/ConfiguratorRoot";
+import KonstantePage from "layouts/konstante";
 
 import {
   useMaterialUIController,
@@ -127,6 +128,11 @@ function Configurator() {
           <MDTypography variant="h6">Svetla/ temna tema</MDTypography>
           <Switch checked={darkMode} onChange={handleDarkMode} />
         </MDBox>
+      </MDBox>
+      <MDBox mt={4}>
+        <MDButton variant="gradient" color="dark" fullWidth component="a" href="/konstante">
+          Konstante
+        </MDButton>
       </MDBox>
     </ConfiguratorRoot>
   );

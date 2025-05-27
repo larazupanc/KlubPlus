@@ -11,7 +11,8 @@ import UrediVloge from "layouts/vloge";
 import KonstantePage from "layouts/konstante";
 import Icon from "@mui/material/Icon";
 import PodrobnostiPlacil from "layouts/podrobnostiplacil";
-
+import UgodnostiPage from "layouts/ugodnosti/UgodnostiPage";
+import UgodnostiPodrobnostiPage from "layouts/ugodnosti/UgodnostiPodrobnostiPage";
 const routes = [
   {
     type: "collapse",
@@ -30,7 +31,7 @@ const routes = [
     component: <Ure />,
   },
   {
-    type: "collapse",
+    type: "route",
     name: "Podrobnosti",
     key: "podrobnosti",
     icon: <Icon fontSize="small">notifications</Icon>,
@@ -78,6 +79,14 @@ const routes = [
   },
   {
     type: "collapse",
+    name: "Ugodnosti",
+    key: "ugodnosti",
+    icon: <Icon fontSize="small">account_balance_wallet </Icon>,
+    route: "/ugodnosti",
+    component: <UgodnostiPage />,
+  },
+  {
+    type: "collapse",
     name: "Vloge",
     key: "urediVloge",
     icon: <Icon fontSize="small">groups</Icon>,
@@ -104,6 +113,13 @@ const routes = [
     key: "sign-up",
     route: "/authentication/sign-up",
     component: <SignUp />,
+  },
+  {
+    type: "route",
+    name: "UgodnostiPodrobnostiPage",
+    key: "ugodnosti/podrobnosti",
+    route: "/ugodnosti/podrobnosti",
+    component: <UgodnostiPodrobnostiPage />,
   },
 ];
 
