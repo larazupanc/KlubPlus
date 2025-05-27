@@ -12,49 +12,85 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
+import IconButton from "@mui/material/IconButton";
+import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import MDTypography from "components/MDTypography";
 import MDBox from "components/MDBox";
 
-function PodrobnostiPlacil() {
-  const [monthlyPayments, setMonthlyPayments] = useState([]);
-  const [allPeople, setAllPeople] = useState([]);
+function PlacilaInProjektiPage() {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [placila, setPlacila] = useState([]);
+  const [projekti, setProjekti] = useState([]);
 
   useEffect(() => {
-    const fetchPlacila = async () => {
-      const snapshot = await getDocs(collection(db, "placila"));
-      const docs = snapshot.docs.map((doc) => ({
+    const fetchData = async () => {
+      const placilaSnap = await getDocs(collection(db, "placila"));
+      const projektiSnap = await getDocs(collection(db, "izplacani_projekti"));
+
+      const placilaData = placilaSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      const projektiData = projektiSnap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      const sortedDocs = docs.sort((a, b) => (a.id > b.id ? 1 : -1));
-      setMonthlyPayments(sortedDocs);
-
-      const peopleSet = new Set();
-      docs.forEach((doc) => {
-        doc.payments.forEach((p) => {
-          peopleSet.add(`${p.name}|||${p.email}`);
-        });
-      });
-
-      const peopleList = Array.from(peopleSet).map((entry) => {
-        const [name, email] = entry.split("|||");
-        return { name, email };
-      });
-
-      setAllPeople(peopleList);
+      setPlacila(placilaData);
+      setProjekti(projektiData);
     };
 
-    fetchPlacila();
+    fetchData();
   }, []);
 
-  const getAmountFor = (person, monthId) => {
-    const monthData = monthlyPayments.find((m) => m.id === monthId);
-    if (!monthData) return "";
-    const payment = monthData.payments.find(
-      (p) => p.name === person.name && p.email === person.email
+  const monthId = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}`;
+
+  const currentPlacilaDoc = placila.find((doc) => doc.id.includes(monthId));
+  const placilaInMonth = currentPlacilaDoc?.payments || [];
+
+  const projektiInMonth = projekti.filter((item) => {
+    if (!item.timestamp?.toDate) return false;
+    const date = item.timestamp.toDate();
+    return (
+      date.getMonth() === currentMonth.getMonth() &&
+      date.getFullYear() === currentMonth.getFullYear()
     );
+  });
+
+  const getAllPeople = (payments) => {
+    const peopleSet = new Set();
+    payments.forEach((p) => {
+      peopleSet.add(`${p.name}|||${p.email}`);
+    });
+    return Array.from(peopleSet).map((entry) => {
+      const [name, email] = entry.split("|||");
+      return { name, email };
+    });
+  };
+
+  const getAmountFor = (person, payments) => {
+    const payment = payments.find((p) => p.name === person.name && p.email === person.email);
     return payment ? `${payment.amount}€` : "-";
+  };
+
+  const people = getAllPeople(placilaInMonth);
+  const monthName = currentMonth.toLocaleString("default", { month: "long" });
+  const year = currentMonth.getFullYear();
+
+  const handlePrevMonth = () => {
+    const newDate = new Date(currentMonth);
+    newDate.setMonth(currentMonth.getMonth() - 1);
+    setCurrentMonth(newDate);
+  };
+
+  const handleNextMonth = () => {
+    const newDate = new Date(currentMonth);
+    newDate.setMonth(currentMonth.getMonth() + 1);
+    setCurrentMonth(newDate);
   };
 
   return (
@@ -62,11 +98,23 @@ function PodrobnostiPlacil() {
       <DashboardNavbar />
       <MDBox py={3}>
         <Card sx={{ p: 3 }}>
-          <MDTypography variant="h5" gutterBottom>
-            Podrobnosti plačil po mesecih
-          </MDTypography>
+          <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <IconButton onClick={handlePrevMonth}>
+              <ArrowBackIosIcon />
+            </IconButton>
+            <MDTypography variant="h5">
+              Podatki za {monthName} {year}
+            </MDTypography>
+            <IconButton onClick={handleNextMonth}>
+              <ArrowForwardIosIcon />
+            </IconButton>
+          </MDBox>
 
-          <TableContainer component={Paper}>
+          {}
+          <MDTypography variant="h6" mb={1}>
+            Plačila iz mesečnih honorarjev
+          </MDTypography>
+          <TableContainer component={Paper} sx={{ mb: 5 }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
@@ -76,21 +124,52 @@ function PodrobnostiPlacil() {
                   <TableCell>
                     <strong>Email</strong>
                   </TableCell>
-                  {monthlyPayments.map((m) => (
-                    <TableCell key={m.id}>
-                      {m.month} {m.year}
-                    </TableCell>
-                  ))}
+                  <TableCell>
+                    <strong>Znesek</strong>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {allPeople.map((person) => (
+                {people.map((person) => (
                   <TableRow key={person.email}>
                     <TableCell>{person.name}</TableCell>
                     <TableCell>{person.email}</TableCell>
-                    {monthlyPayments.map((m) => (
-                      <TableCell key={m.id}>{getAmountFor(person, m.id)}</TableCell>
-                    ))}
+                    <TableCell>{getAmountFor(person, placilaInMonth)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {}
+          <MDTypography variant="h6" mb={1}>
+            Izplačani projekti
+          </MDTypography>
+          <TableContainer component={Paper}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <strong>Naziv</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Vodja</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Metoda</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Znesek TRR</strong>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {projektiInMonth.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.naziv}</TableCell>
+                    <TableCell>{item.vodja}</TableCell>
+                    <TableCell>{item.metoda}</TableCell>
+                    <TableCell>{item.znesekTRR} €</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -103,4 +182,4 @@ function PodrobnostiPlacil() {
   );
 }
 
-export default PodrobnostiPlacil;
+export default PlacilaInProjektiPage;

@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  setDoc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "firebaseConfig";
+
 import IconButton from "@mui/material/IconButton";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
+import PaidIcon from "@mui/icons-material/Paid";
 
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
@@ -70,7 +80,7 @@ const handleGeneratePlan = async (project) => {
   }
 };
 
-export default function useProjektiData(refreshKey, onEdit) {
+export default function useProjektiData(refreshKey, onEdit, openPayDialog) {
   const [data, setData] = useState({ columns: [], rows: [] });
 
   const handleDelete = async (id) => {
@@ -81,7 +91,7 @@ export default function useProjektiData(refreshKey, onEdit) {
         rows: prev.rows.filter((row) => row.id !== id),
       }));
     } catch (err) {
-      console.error("Error deleting project:", err);
+      console.error("Napaka pri brisanju projekta:", err);
     }
   };
 
@@ -96,23 +106,33 @@ export default function useProjektiData(refreshKey, onEdit) {
           ...project,
           action: (
             <>
-              <IconButton onClick={() => onEdit({ id: docSnap.id, ...project })}>
+              <IconButton onClick={() => onEdit({ id: docSnap.id, ...project })} title="Uredi">
                 <EditIcon />
               </IconButton>
-              <IconButton onClick={() => handleDelete(docSnap.id)}>
+
+              <IconButton onClick={() => handleDelete(docSnap.id)} title="Izbriši">
                 <DeleteIcon />
               </IconButton>
+
               <IconButton
                 onClick={() => handleGeneratePlan({ id: docSnap.id, ...project })}
-                title="Generiraj načrt"
+                title="Prenesi načrt"
               >
                 <DownloadIcon />
               </IconButton>
+
               <IconButton
                 onClick={() => handleGenerateReport({ id: docSnap.id, ...project })}
-                title="Generiraj poročilo"
+                title="Prenesi poročilo"
               >
                 <DownloadIcon />
+              </IconButton>
+
+              <IconButton
+                onClick={() => openPayDialog({ id: docSnap.id, ...project })}
+                title="Odpri plačilni dialog"
+              >
+                <PaidIcon />
               </IconButton>
             </>
           ),
@@ -130,14 +150,14 @@ export default function useProjektiData(refreshKey, onEdit) {
           { Header: "Ura", accessor: "ura", align: "left" },
           { Header: "Druge info", accessor: "drugeInformacije", align: "left" },
           { Header: "Področje", accessor: "podrocje", align: "left" },
-          { Header: "Več", accessor: "action", align: "center" },
+          { Header: "Več", accessor: "action", align: "center", disableSortBy: true },
         ],
         rows,
       });
     };
 
     fetchData();
-  }, [refreshKey]);
+  }, [refreshKey, onEdit, openPayDialog]);
 
   return data;
 }
