@@ -26,6 +26,9 @@
     "docxtemplater": "^3.62.2",
     "file-saver": "^2.0.5",
     "firebase": "^11.6.0",
+    "firebase-admin": "^13.4.0",
+    "node-fetch": "^3.3.2",
+    "nodemailer": "^7.0.3",
     "pizzip": "^3.2.0",
     "prop-types": "^15.8.1",
     "react": "18.2.0",
@@ -35,6 +38,7 @@
     "react-router-dom": "6.11.0",
     "react-scripts": "5.0.1",
     "react-table": "7.8.0",
+    "resend": "^4.5.1",
     "stylis": "4.1.4",
     "stylis-plugin-rtl": "2.1.1",
     "xlsx": "^0.18.5",
@@ -78,5 +82,8 @@
   },
   "overrides": {
     "svgo": "3.0.2"
-  }
+  },
+  "homepage": "https://github.com/creativetimofficial/material-dashboard-react#readme",
+  "main": "index.js",
+  "keywords": []
 }

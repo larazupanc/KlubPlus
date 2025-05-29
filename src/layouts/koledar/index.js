@@ -32,6 +32,7 @@ import MDButton from "components/MDButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
+import { Select, MenuItem, InputLabel, FormControl } from "@mui/material";
 
 const weekDays = ["Pon", "Tor", "Sre", "Čet", "Pet", "Sob", "Ned"];
 const allowedSlots = {
@@ -47,6 +48,7 @@ function Koledar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [name, setName] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     generateCalendar();
@@ -66,6 +68,19 @@ function Koledar() {
     }
 
     setCalendarDays(days);
+  };
+  const [selectedUser, setSelectedUser] = useState(null);
+  useEffect(() => {
+    generateCalendar();
+    fetchBookings();
+    fetchSestanki();
+    fetchUsers();
+  }, [currentMonth]);
+
+  const fetchUsers = async () => {
+    const snapshot = await getDocs(collection(db, "vloge"));
+    const fetchedUsers = snapshot.docs.map((doc) => doc.data());
+    setUsers(fetchedUsers);
   };
 
   const fetchBookings = async () => {
@@ -120,14 +135,15 @@ function Koledar() {
   };
 
   const handleBooking = async () => {
-    if (!name.trim() || !selectedDate) return;
+    if (!selectedUser || !selectedDate) return;
 
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     const weekday = getDay(selectedDate);
     const shifted = weekday === 0 ? 6 : weekday - 1;
 
     await addDoc(collection(db, "rezervacije"), {
-      name: name.trim(),
+      name: selectedUser.name,
+      email: selectedUser.email,
       date: dateStr,
       slot: allowedSlots[shifted].time,
       createdAt: new Date().toISOString(),
@@ -142,6 +158,7 @@ function Koledar() {
       Datum: b.date,
       Termin: b.slot,
       Ime: b.name,
+      Email: b.email || "",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(data);
@@ -260,13 +277,22 @@ function Koledar() {
             {selectedDate &&
               allowedSlots[getDay(selectedDate) === 0 ? 6 : getDay(selectedDate) - 1].time}
           </Typography>
-          <TextField
-            label="Ime in priimek"
-            fullWidth
-            margin="dense"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <FormControl fullWidth margin="dense">
+            <InputLabel id="user-select-label">Izberi osebo</InputLabel>
+            <Select
+              labelId="user-select-label"
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              label="Izberi osebo"
+              renderValue={(user) => user?.name || ""}
+            >
+              {users.map((user) => (
+                <MenuItem key={user.email} value={user}>
+                  {user.name} ({user.role})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>Prekliči</Button>

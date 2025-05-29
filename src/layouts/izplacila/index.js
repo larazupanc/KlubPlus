@@ -94,13 +94,11 @@ function Izplacila() {
 
     placilaInMonth[paymentIndex].izplacano = !placilaInMonth[paymentIndex].izplacano;
 
-    // Update Firebase
     const docRef = doc(db, "placila", currentPlacilaDoc.id);
     await updateDoc(docRef, {
       payments: placilaInMonth,
     });
 
-    // Update local state
     setPlacila((prev) =>
       prev.map((doc) =>
         doc.id === currentPlacilaDoc.id ? { ...doc, payments: [...placilaInMonth] } : doc
