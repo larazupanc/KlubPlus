@@ -12,6 +12,7 @@ import KonstantePage from "layouts/konstante";
 import Icon from "@mui/material/Icon";
 import PodrobnostiPlacil from "layouts/podrobnostiplacil";
 import UgodnostiPage from "layouts/ugodnosti/UgodnostiPage";
+import RezervacijaProstora from "layouts/rezervacijaProstor/rezervacijaProstora";
 import UgodnostiPodrobnostiPage from "layouts/ugodnosti/UgodnostiPodrobnostiPage";
 const routes = [
   {
@@ -61,6 +62,14 @@ const routes = [
     icon: <Icon fontSize="small">calendar_month</Icon>,
     route: "/koledar",
     component: <Koledar />,
+  },
+  {
+    type: "collapse",
+    name: "Rezervacija Prostora",
+    key: "Rezervacija Prostora",
+    icon: <Icon fontSize="small">calendar_month</Icon>,
+    route: "/rezervacijaProstora",
+    component: <RezervacijaProstora />,
   },
   {
     type: "route",

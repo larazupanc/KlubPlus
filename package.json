@@ -83,7 +83,7 @@
   "overrides": {
     "svgo": "3.0.2"
   },
-  "homepage": "https://github.com/creativetimofficial/material-dashboard-react#readme",
+  "homepage": ".",
   "main": "index.js",
   "keywords": []
 }

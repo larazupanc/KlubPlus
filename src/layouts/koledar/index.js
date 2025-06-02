@@ -23,6 +23,10 @@ import {
   Button,
   TextField,
   Paper,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from "@mui/material";
 import { ArrowBack, ArrowForward } from "@mui/icons-material";
 import * as XLSX from "xlsx";
@@ -32,7 +36,6 @@ import MDButton from "components/MDButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
-import { Select, MenuItem, InputLabel, FormControl } from "@mui/material";
 
 const weekDays = ["Pon", "Tor", "Sre", "Čet", "Pet", "Sob", "Ned"];
 const allowedSlots = {
@@ -45,15 +48,23 @@ function Koledar() {
   const [calendarDays, setCalendarDays] = useState([]);
   const [bookedDates, setBookedDates] = useState([]);
   const [sestanki, setSestanki] = useState([]);
+  const [dogodki, setDogodki] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [name, setName] = useState("");
   const [openDialog, setOpenDialog] = useState(false);
   const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [filters, setFilters] = useState({
+    uradneUre: true,
+    dogodki: true,
+    sestanki: true,
+  });
 
   useEffect(() => {
     generateCalendar();
     fetchBookings();
     fetchSestanki();
+    fetchDogodki();
+    fetchUsers();
   }, [currentMonth]);
 
   const generateCalendar = () => {
@@ -69,13 +80,6 @@ function Koledar() {
 
     setCalendarDays(days);
   };
-  const [selectedUser, setSelectedUser] = useState(null);
-  useEffect(() => {
-    generateCalendar();
-    fetchBookings();
-    fetchSestanki();
-    fetchUsers();
-  }, [currentMonth]);
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "vloge"));
@@ -104,6 +108,12 @@ function Koledar() {
     setSestanki(meetings);
   };
 
+  const fetchDogodki = async () => {
+    const snapshot = await getDocs(collection(db, "dogodki"));
+    const events = snapshot.docs.map((doc) => doc.data());
+    setDogodki(events);
+  };
+
   const isBookable = (date) => {
     const day = getDay(date);
     return allowedSlots[day - 1] !== undefined;
@@ -120,6 +130,11 @@ function Koledar() {
     return sestanki.filter((s) => s.date === dateStr);
   };
 
+  const getDogodkiForDate = (date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return dogodki.filter((d) => d.date === dateStr);
+  };
+
   const handleDayClick = (date) => {
     const today = new Date();
     if (!isSameMonth(date, currentMonth)) return;
@@ -130,7 +145,6 @@ function Koledar() {
     if (!isAllowed || getBookedName(date)) return;
 
     setSelectedDate(date);
-    setName("");
     setOpenDialog(true);
   };
 
@@ -175,6 +189,41 @@ function Koledar() {
         Koledar uradnih ur
       </Typography>
 
+      {/* Filters */}
+      <Grid container justifyContent="center" spacing={2} mt={2}>
+        <Grid item>
+          <label>
+            <input
+              type="checkbox"
+              checked={filters.uradneUre}
+              onChange={() => setFilters((prev) => ({ ...prev, uradneUre: !prev.uradneUre }))}
+            />
+            Uradne ure
+          </label>
+        </Grid>
+        <Grid item>
+          <label>
+            <input
+              type="checkbox"
+              checked={filters.sestanki}
+              onChange={() => setFilters((prev) => ({ ...prev, sestanki: !prev.sestanki }))}
+            />
+            Sestanki
+          </label>
+        </Grid>
+        <Grid item>
+          <label>
+            <input
+              type="checkbox"
+              checked={filters.dogodki}
+              onChange={() => setFilters((prev) => ({ ...prev, dogodki: !prev.dogodki }))}
+            />
+            Dogodki
+          </label>
+        </Grid>
+      </Grid>
+
+      {/* Calendar Controls */}
       <Grid container justifyContent="center" alignItems="center" mt={2}>
         <IconButton onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
           <ArrowBack />
@@ -187,6 +236,7 @@ function Koledar() {
         </IconButton>
       </Grid>
 
+      {/* Calendar */}
       <Grid container spacing={1} justifyContent="center" mt={2}>
         {weekDays.map((day) => (
           <Grid item xs={1.7} key={day}>
@@ -201,8 +251,9 @@ function Koledar() {
           const weekday = getDay(date);
           const shifted = weekday === 0 ? 6 : weekday - 1;
           const bookable = allowedSlots[shifted];
-          const bookedName = getBookedName(date);
-          const meetings = getSestankiForDate(date);
+          const bookedName = filters.uradneUre ? getBookedName(date) : null;
+          const meetings = filters.sestanki ? getSestankiForDate(date) : [];
+          const events = filters.dogodki ? getDogodkiForDate(date) : [];
 
           return (
             <Grid item xs={1.7} key={index}>
@@ -216,7 +267,9 @@ function Koledar() {
                     ? "#ffcdd2"
                     : meetings.length
                     ? "#bbdefb"
-                    : bookable
+                    : events.length
+                    ? "#ffe0b2"
+                    : bookable && filters.uradneUre
                     ? "#c8e6c9"
                     : "#ffffff",
                   visibility: inMonth ? "visible" : "hidden",
@@ -230,7 +283,7 @@ function Koledar() {
                   {format(date, "d")}
                 </Typography>
 
-                {bookable && inMonth && (
+                {bookable && inMonth && filters.uradneUre && (
                   <Typography align="center" variant="caption" display="block">
                     {allowedSlots[shifted].label}
                   </Typography>
@@ -242,30 +295,43 @@ function Koledar() {
                   </Typography>
                 )}
 
-                {meetings.length > 0 &&
-                  meetings.map((m, i) => (
-                    <Typography
-                      key={i}
-                      align="center"
-                      variant="caption"
-                      display="block"
-                      sx={{ fontSize: "0.65rem", mt: 0.5 }}
-                    >
-                      📌 {m.title} ({m.startTime})
-                    </Typography>
-                  ))}
+                {meetings.map((m, i) => (
+                  <Typography
+                    key={i}
+                    align="center"
+                    variant="caption"
+                    display="block"
+                    sx={{ fontSize: "0.65rem", mt: 0.5 }}
+                  >
+                    📌 {m.title} ({m.startTime})
+                  </Typography>
+                ))}
+
+                {events.map((e, i) => (
+                  <Typography
+                    key={i}
+                    align="center"
+                    variant="caption"
+                    display="block"
+                    sx={{ fontSize: "0.65rem", mt: 0.5 }}
+                  >
+                    🎉 {e.title}
+                  </Typography>
+                ))}
               </Paper>
             </Grid>
           );
         })}
       </Grid>
 
+      {/* Download */}
       <Grid container justifyContent="center" mt={4}>
         <MDButton variant="gradient" color="info" onClick={downloadExcel}>
           Prenesi Excel za mesec
         </MDButton>
       </Grid>
 
+      {/* Booking Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Vpis na uradne ure</DialogTitle>
         <DialogContent>
