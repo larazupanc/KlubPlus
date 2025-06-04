@@ -200,7 +200,6 @@ export default function Projekti() {
 
       <Footer />
 
-      {/* Form Modal */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <MDTypography variant="h5">
@@ -218,7 +217,6 @@ export default function Projekti() {
         </DialogContent>
       </Dialog>
 
-      {/* Fullscreen Table Modal */}
       <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullScreen>
         <DialogTitle
           sx={{
@@ -257,7 +255,6 @@ export default function Projekti() {
             Osnova: {osnova} €
           </Typography>
 
-          {/* Dropdown Pribitek na udeležbo */}
           <Typography variant="body2" mt={2}>
             Pribitek na udeležbo:
           </Typography>
@@ -280,7 +277,6 @@ export default function Projekti() {
             ))}
           </Select>
 
-          {/* Dropdown Urni pribitek */}
           <Typography variant="body2" mt={2}>
             Urni pribitek:
           </Typography>

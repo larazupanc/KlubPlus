@@ -142,7 +142,6 @@ function RezervacijaSkupnegaProstora() {
         </Grid>
       </MDBox>
 
-      {/* Dialog za rezervacijo */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="sm">
         <DialogTitle>Nova rezervacija prostora</DialogTitle>
         <DialogContent>

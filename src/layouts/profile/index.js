@@ -17,13 +17,9 @@ function Overview() {
         <MDBox pt={2} px={2} lineHeight={1.25}>
           <MDTypography variant="h6" fontWeight="medium">
             <UserApprovalPanel />
-
-            {/* Placeholder */}
           </MDTypography>
           <MDBox mb={1}>
-            <MDTypography variant="button" color="text">
-              {/* Placeholder */}
-            </MDTypography>
+            <MDTypography variant="button" color="text"></MDTypography>
           </MDBox>
         </MDBox>
         <MDBox p={2}></MDBox>

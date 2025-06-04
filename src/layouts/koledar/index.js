@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import MDBox from "components/MDBox";
+import MDTypography from "components/MDTypography";
 import {
   startOfMonth,
   endOfMonth,
@@ -20,13 +22,13 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button,
-  TextField,
   Paper,
+  Button,
   Select,
   MenuItem,
   InputLabel,
   FormControl,
+  Menu,
 } from "@mui/material";
 import { ArrowBack, ArrowForward } from "@mui/icons-material";
 import * as XLSX from "xlsx";
@@ -39,8 +41,8 @@ import Footer from "examples/Footer";
 
 const weekDays = ["Pon", "Tor", "Sre", "Čet", "Pet", "Sob", "Ned"];
 const allowedSlots = {
-  4: { label: "Petek 18:30–19:30", time: "18:30–19:30" },
-  5: { label: "Sobota 10:00–12:00", time: "10:00–12:00" },
+  4: { label: "18:30–19:30", time: "18:30–19:30" },
+  5: { label: "10:00–12:00", time: "10:00–12:00" },
 };
 
 function Koledar() {
@@ -53,11 +55,9 @@ function Koledar() {
   const [openDialog, setOpenDialog] = useState(false);
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [filters, setFilters] = useState({
-    uradneUre: true,
-    dogodki: true,
-    sestanki: true,
-  });
+  const [filters, setFilters] = useState({ uradneUre: true, dogodki: true, sestanki: true });
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
 
   useEffect(() => {
     generateCalendar();
@@ -72,89 +72,59 @@ function Koledar() {
     const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 1 });
     const days = [];
     let day = start;
-
     while (day <= end) {
       days.push(day);
       day = addDays(day, 1);
     }
-
     setCalendarDays(days);
   };
 
   const fetchUsers = async () => {
     const snapshot = await getDocs(collection(db, "vloge"));
-    const fetchedUsers = snapshot.docs.map((doc) => doc.data());
-    setUsers(fetchedUsers);
+    setUsers(snapshot.docs.map((doc) => doc.data()));
   };
 
   const fetchBookings = async () => {
     const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
     const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-
     const q = query(
       collection(db, "rezervacije"),
       where("date", ">=", start),
       where("date", "<=", end)
     );
-
     const snapshot = await getDocs(q);
-    const booked = snapshot.docs.map((doc) => doc.data());
-    setBookedDates(booked);
+    setBookedDates(snapshot.docs.map((doc) => doc.data()));
   };
 
   const fetchSestanki = async () => {
     const snapshot = await getDocs(collection(db, "sestanki"));
-    const meetings = snapshot.docs.map((doc) => doc.data());
-    setSestanki(meetings);
+    setSestanki(snapshot.docs.map((doc) => doc.data()));
   };
 
   const fetchDogodki = async () => {
-    const snapshot = await getDocs(collection(db, "dogodki"));
-    const events = snapshot.docs.map((doc) => doc.data());
-    setDogodki(events);
+    const snapshot = await getDocs(collection(db, "projekti"));
+    setDogodki(snapshot.docs.map((doc) => doc.data()));
   };
 
-  const isBookable = (date) => {
-    const day = getDay(date);
-    return allowedSlots[day - 1] !== undefined;
-  };
-
-  const getBookedName = (date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    const match = bookedDates.find((b) => b.date === dateStr);
-    return match?.name || null;
-  };
-
-  const getSestankiForDate = (date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return sestanki.filter((s) => s.date === dateStr);
-  };
-
-  const getDogodkiForDate = (date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    return dogodki.filter((d) => d.date === dateStr);
-  };
+  const getBookedName = (date) =>
+    bookedDates.find((b) => b.date === format(date, "yyyy-MM-dd"))?.name || null;
+  const getSestankiForDate = (date) =>
+    sestanki.filter((s) => s.date === format(date, "yyyy-MM-dd"));
+  const getDogodkiForDate = (date) => dogodki.filter((d) => d.datum === format(date, "yyyy-MM-dd"));
 
   const handleDayClick = (date) => {
     const today = new Date();
-    if (!isSameMonth(date, currentMonth)) return;
-    if (date < startOfDay(today)) return;
-    const weekday = getDay(date);
-    const shifted = weekday === 0 ? 6 : weekday - 1;
-    const isAllowed = allowedSlots[shifted];
-    if (!isAllowed || getBookedName(date)) return;
-
+    if (!isSameMonth(date, currentMonth) || date < startOfDay(today)) return;
+    const shifted = (getDay(date) + 6) % 7;
+    if (!allowedSlots[shifted] || getBookedName(date)) return;
     setSelectedDate(date);
     setOpenDialog(true);
   };
 
   const handleBooking = async () => {
     if (!selectedUser || !selectedDate) return;
-
     const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const weekday = getDay(selectedDate);
-    const shifted = weekday === 0 ? 6 : weekday - 1;
-
+    const shifted = (getDay(selectedDate) + 6) % 7;
     await addDoc(collection(db, "rezervacije"), {
       name: selectedUser.name,
       email: selectedUser.email,
@@ -162,7 +132,6 @@ function Koledar() {
       slot: allowedSlots[shifted].time,
       createdAt: new Date().toISOString(),
     });
-
     setOpenDialog(false);
     fetchBookings();
   };
@@ -174,56 +143,44 @@ function Koledar() {
       Ime: b.name,
       Email: b.email || "",
     }));
-
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Rezervacije");
-
     XLSX.writeFile(workbook, `rezervacije_${format(currentMonth, "MM_yyyy")}.xlsx`);
   };
 
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <Typography variant="h4" align="center" mt={4}>
-        Koledar uradnih ur
-      </Typography>
+      <MDBox display="flex" justifyContent="space-between" alignItems="center" mt={4}>
+        <Typography variant="h4">Koledar uradnih ur, sestankov in projektov</Typography>
+        <MDButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
+          Filtri
+        </MDButton>
+      </MDBox>
 
-      {/* Filters */}
-      <Grid container justifyContent="center" spacing={2} mt={2}>
-        <Grid item>
-          <label>
-            <input
-              type="checkbox"
-              checked={filters.uradneUre}
-              onChange={() => setFilters((prev) => ({ ...prev, uradneUre: !prev.uradneUre }))}
-            />
-            Uradne ure
-          </label>
-        </Grid>
-        <Grid item>
-          <label>
-            <input
-              type="checkbox"
-              checked={filters.sestanki}
-              onChange={() => setFilters((prev) => ({ ...prev, sestanki: !prev.sestanki }))}
-            />
-            Sestanki
-          </label>
-        </Grid>
-        <Grid item>
-          <label>
-            <input
-              type="checkbox"
-              checked={filters.dogodki}
-              onChange={() => setFilters((prev) => ({ ...prev, dogodki: !prev.dogodki }))}
-            />
-            Dogodki
-          </label>
-        </Grid>
+      <MDTypography variant="body2" color="textSecondary" gutterBottom>
+        Uradne ure potekajo vsak petek od 18:30 do 20:30 in v soboto od 10:00 do 12:00. Sestanki
+        potekajo enkrat mesečno.
+      </MDTypography>
+
+      <Grid container justifyContent="center" mt={2}>
+        <Menu anchorEl={anchorEl} open={open} onClose={() => setAnchorEl(null)}>
+          {["uradneUre", "sestanki", "projekti"].map((key) => (
+            <MenuItem key={key}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={filters[key]}
+                  onChange={() => setFilters((prev) => ({ ...prev, [key]: !prev[key] }))}
+                />
+                {key === "uradneUre" ? "Uradne ure" : key === "sestanki" ? "Sestanki" : "Dogodki"}
+              </label>
+            </MenuItem>
+          ))}
+        </Menu>
       </Grid>
 
-      {/* Calendar Controls */}
       <Grid container justifyContent="center" alignItems="center" mt={2}>
         <IconButton onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
           <ArrowBack />
@@ -236,7 +193,6 @@ function Koledar() {
         </IconButton>
       </Grid>
 
-      {/* Calendar */}
       <Grid container spacing={1} justifyContent="center" mt={2}>
         {weekDays.map((day) => (
           <Grid item xs={1.7} key={day}>
@@ -249,29 +205,29 @@ function Koledar() {
         {calendarDays.map((date, index) => {
           const inMonth = isSameMonth(date, currentMonth);
           const weekday = getDay(date);
-          const shifted = weekday === 0 ? 6 : weekday - 1;
+          const shifted = (weekday + 6) % 7;
           const bookable = allowedSlots[shifted];
           const bookedName = filters.uradneUre ? getBookedName(date) : null;
           const meetings = filters.sestanki ? getSestankiForDate(date) : [];
           const events = filters.dogodki ? getDogodkiForDate(date) : [];
 
+          const getBackgroundColor = () => {
+            if (!inMonth) return "white";
+            if (bookedName) return "#fff176";
+            if (events.length) return "#64b5f6";
+            if (meetings.length) return "#ffb74d";
+            if (bookable && filters.uradneUre) return "#c8e6c9";
+            return "#ffffff";
+          };
+
           return (
             <Grid item xs={1.7} key={index}>
               <Paper
                 sx={{
-                  height: 120,
+                  height: 90,
+                  fontSize: "0.7rem",
                   p: 1,
-                  backgroundColor: !inMonth
-                    ? "white"
-                    : bookedName
-                    ? "#ffcdd2"
-                    : meetings.length
-                    ? "#bbdefb"
-                    : events.length
-                    ? "#ffe0b2"
-                    : bookable && filters.uradneUre
-                    ? "#c8e6c9"
-                    : "#ffffff",
+                  backgroundColor: getBackgroundColor(),
                   visibility: inMonth ? "visible" : "hidden",
                   cursor: bookable && !bookedName ? "pointer" : "default",
                   overflow: "hidden",
@@ -279,43 +235,27 @@ function Koledar() {
                 elevation={3}
                 onClick={() => handleDayClick(date)}
               >
-                <Typography align="center" variant="subtitle2">
+                <Typography align="left" sx={{ fontSize: "0.7rem" }}>
                   {format(date, "d")}
                 </Typography>
-
                 {bookable && inMonth && filters.uradneUre && (
-                  <Typography align="center" variant="caption" display="block">
-                    {allowedSlots[shifted].label}
+                  <Typography align="left" sx={{ fontSize: "0.7rem" }}>
+                    🕒 {allowedSlots[shifted].label}
                   </Typography>
                 )}
-
-                {bookedName && inMonth && (
-                  <Typography align="center" variant="caption" display="block">
+                {bookedName && (
+                  <Typography align="left" sx={{ fontSize: "0.7rem" }}>
                     {bookedName}
                   </Typography>
                 )}
-
                 {meetings.map((m, i) => (
-                  <Typography
-                    key={i}
-                    align="center"
-                    variant="caption"
-                    display="block"
-                    sx={{ fontSize: "0.65rem", mt: 0.5 }}
-                  >
-                    📌 {m.title} ({m.startTime})
+                  <Typography key={i} align="left" sx={{ fontSize: "0.7rem", mt: 0.5 }}>
+                    💼 {m.title} ({m.startTime})
                   </Typography>
                 ))}
-
                 {events.map((e, i) => (
-                  <Typography
-                    key={i}
-                    align="center"
-                    variant="caption"
-                    display="block"
-                    sx={{ fontSize: "0.65rem", mt: 0.5 }}
-                  >
-                    🎉 {e.title}
+                  <Typography key={i} align="left" sx={{ fontSize: "0.7rem" }}>
+                    🎉 {e.naziv}
                   </Typography>
                 ))}
               </Paper>
@@ -324,14 +264,12 @@ function Koledar() {
         })}
       </Grid>
 
-      {/* Download */}
       <Grid container justifyContent="center" mt={4}>
         <MDButton variant="gradient" color="info" onClick={downloadExcel}>
           Prenesi Excel za mesec
         </MDButton>
       </Grid>
 
-      {/* Booking Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Vpis na uradne ure</DialogTitle>
         <DialogContent>
@@ -339,9 +277,7 @@ function Koledar() {
             Datum: {selectedDate && format(selectedDate, "dd.MM.yyyy")}
           </Typography>
           <Typography gutterBottom>
-            Termin:{" "}
-            {selectedDate &&
-              allowedSlots[getDay(selectedDate) === 0 ? 6 : getDay(selectedDate) - 1].time}
+            Termin: {selectedDate && allowedSlots[(getDay(selectedDate) + 6) % 7].time}
           </Typography>
           <FormControl fullWidth margin="dense">
             <InputLabel id="user-select-label">Izberi osebo</InputLabel>
