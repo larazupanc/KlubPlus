@@ -28,8 +28,8 @@ import MDTypography from "components/MDTypography";
 import MDAvatar from "components/MDAvatar";
 import MDButton from "components/MDButton";
 
-function ProfilesList({ title, profiles, shadow }) {
-  const renderProfiles = profiles.map(({ image, name, description, action }) => (
+function profilsList({ title, profils, shadow }) {
+  const renderprofils = profils.map(({ image, name, description, action }) => (
     <MDBox key={name} component="li" display="flex" alignItems="center" py={1} mb={1}>
       <MDBox mr={2}>
         <MDAvatar src={image} alt="something here" shadow="md" />
@@ -72,23 +72,23 @@ function ProfilesList({ title, profiles, shadow }) {
       </MDBox>
       <MDBox p={2}>
         <MDBox component="ul" display="flex" flexDirection="column" p={0} m={0}>
-          {renderProfiles}
+          {renderprofils}
         </MDBox>
       </MDBox>
     </Card>
   );
 }
 
-// Setting default props for the ProfilesList
-ProfilesList.defaultProps = {
+// Setting default props for the profilsList
+profilsList.defaultProps = {
   shadow: true,
 };
 
-// Typechecking props for the ProfilesList
-ProfilesList.propTypes = {
+// Typechecking props for the profilsList
+profilsList.propTypes = {
   title: PropTypes.string.isRequired,
-  profiles: PropTypes.arrayOf(PropTypes.object).isRequired,
+  profils: PropTypes.arrayOf(PropTypes.object).isRequired,
   shadow: PropTypes.bool,
 };
 
-export default ProfilesList;
+export default profilsList;

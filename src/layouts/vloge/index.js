@@ -25,7 +25,6 @@ import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import IconButton from "@mui/material/IconButton";
@@ -76,6 +75,7 @@ function UrediVloge() {
     fetchVloge();
     fetchRetired();
   }, []);
+
   useEffect(() => {
     const konstanteRef = doc(db, "nastavitve", "konstante");
 
@@ -112,9 +112,11 @@ function UrediVloge() {
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
     const previousMonthDate = new Date(currentYear, currentMonth - 1, 1);
+
     const month = previousMonthDate.toLocaleString("default", { month: "long" });
     const year = previousMonthDate.getFullYear();
     const monthKey = `${year}-${String(previousMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
     setPaymentMonthLabel(`Izplačaj za mesec ${month.charAt(0).toUpperCase() + month.slice(1)}`);
 
     const checkIfPaid = async () => {
@@ -122,9 +124,7 @@ function UrediVloge() {
       setIsPaymentDone(docSnap.exists());
     };
 
-    if (today.getDate() === 1) {
-      checkIfPaid();
-    }
+    checkIfPaid();
   }, []);
 
   const handleMonthlyPayment = async () => {
@@ -156,6 +156,9 @@ function UrediVloge() {
     };
 
     await setDoc(doc(db, "placila", monthKey), paymentsData);
+
+    await setDoc(doc(db, "ugodnosti", monthKey), paymentsData);
+
     setIsPaymentDone(true);
   };
 
@@ -168,8 +171,6 @@ function UrediVloge() {
       const konstanteData = konstanteDoc.exists() ? konstanteDoc.data() : {};
       const honorarji = konstanteData.mesecniHonorarji || {};
       const roleAmount = honorarji[finalRole] || 0;
-
-      console.log("Dodajam vlogo za:", finalRole, "z zneskom:", roleAmount);
 
       await addDoc(collection(db, "vloge"), {
         name: newVloga.name,
@@ -225,8 +226,12 @@ function UrediVloge() {
               <MDTypography variant="h5" mb={2}>
                 Uredi vloge
               </MDTypography>
+              <MDTypography variant="body2" color="textPrimary" gutterBottom>
+                Na tej strani so vpisane vloge. Po statutu imamo v našem klubu 7 vlog: predsednik,
+                podpredsednik, tajnik, blagajnik, član, grafični oblikovalec, urednik socialnih
+                omrežij. Vsak mesec se za mesec nazaj izplača ugodnosti. Blagajnik mora izplačati.
+              </MDTypography>
 
-              {}
               {paymentMonthLabel && (
                 <MDBox mb={2}>
                   <MDButton
@@ -240,7 +245,6 @@ function UrediVloge() {
                 </MDBox>
               )}
 
-              {}
               <Grid container spacing={2} mb={3}>
                 <Grid item xs={12} md={3}>
                   <MDInput
@@ -289,7 +293,6 @@ function UrediVloge() {
                 </Grid>
               </Grid>
 
-              {}
               <TableContainer component={Paper}>
                 <Table>
                   <TableBody>
@@ -370,7 +373,6 @@ function UrediVloge() {
                 </Table>
               </TableContainer>
 
-              {}
               <MDTypography variant="h5" mt={4} mb={2}>
                 Upokojeni člani
               </MDTypography>

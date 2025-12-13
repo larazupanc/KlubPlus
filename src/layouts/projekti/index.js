@@ -1,18 +1,20 @@
 import { useState } from "react";
-import Grid from "@mui/material/Grid";
-import Card from "@mui/material/Card";
-import IconButton from "@mui/material/IconButton";
-import FullscreenIcon from "@mui/icons-material/Fullscreen";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import CloseIcon from "@mui/icons-material/Close";
-import Button from "@mui/material/Button";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import Typography from "@mui/material/Typography";
-
+import {
+  Grid,
+  Card,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  MenuItem,
+  Select,
+  Typography,
+  Box,
+  Button,
+  TextField,
+} from "@mui/material";
+import { Fullscreen as FullscreenIcon, Close as CloseIcon } from "@mui/icons-material";
 import { getDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "firebaseConfig";
 
@@ -29,13 +31,25 @@ import useProjektiData from "./data/projektiData";
 import ProjektiForm from "./components/ProjektiForm";
 
 export default function Projekti() {
+  const backgroundStyle = {
+    backgroundImage:
+      'url("https://drustvo-lak.si/wp-content/uploads/2024/07/3AD585E4-A62F-4ECE-B342-6C748F65EB6E-1-scaled.jpeg")',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    minHeight: "100vh",
+    width: "100%",
+    position: "fixed",
+    opacity: 0.2,
+    top: 0,
+    left: 0,
+    zIndex: -1,
+  };
+
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingProject, setEditingProject] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
-
   const [payMethod, setPayMethod] = useState("pribitekNaUdelezbo");
-
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [osnova, setOsnova] = useState(0);
@@ -43,6 +57,13 @@ export default function Projekti() {
   const [urniPribitek, setUrniPribitek] = useState([]);
   const [selectedPribitekUdelezba, setSelectedPribitekUdelezba] = useState(null);
   const [selectedUrniPribitek, setSelectedUrniPribitek] = useState(null);
+  const [searchText, setSearchText] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterPodrocje, setFilterPodrocje] = useState("");
+  const [filterVodja, setFilterVodja] = useState("");
+
+  const navigate = useNavigate();
 
   const fetchConstants = async () => {
     const konstDoc = await getDoc(doc(db, "nastavitve", "konstante"));
@@ -56,16 +77,14 @@ export default function Projekti() {
   const openPayDialog = async (project) => {
     setSelectedProject(project);
     await fetchConstants();
-
     setSelectedPribitekUdelezba(null);
     setSelectedUrniPribitek(null);
-
     setPayDialogOpen(true);
   };
 
   const calculatePayout = () => {
-    let pribitekUdelezba = selectedPribitekUdelezba ? selectedPribitekUdelezba.pribitek : 0;
-    let pribitekUre = selectedUrniPribitek ? selectedUrniPribitek.pribitek : 0;
+    const pribitekUdelezba = selectedPribitekUdelezba?.pribitek || 0;
+    const pribitekUre = selectedUrniPribitek?.pribitek || 0;
     return osnova + pribitekUdelezba + pribitekUre;
   };
 
@@ -75,13 +94,11 @@ export default function Projekti() {
     const pribitek =
       (selectedPribitekUdelezba?.pribitek || 0) + (selectedUrniPribitek?.pribitek || 0);
     const skupniZnesek = osnova + pribitek;
-
     let znesekUgodnosti = 0;
     let znesekTRR = 0;
 
-    if (payMethod === "100ugodnosti") {
-      znesekUgodnosti = skupniZnesek;
-    } else if (payMethod === "50ugodnosti50trr") {
+    if (payMethod === "100ugodnosti") znesekUgodnosti = skupniZnesek;
+    else if (payMethod === "50ugodnosti50trr") {
       znesekUgodnosti = skupniZnesek / 2;
       znesekTRR = skupniZnesek / 2;
     }
@@ -95,11 +112,12 @@ export default function Projekti() {
 
     const recentProject = {
       naziv: selectedProject.naziv,
-      osnova: osnova,
-      pribitek: pribitek,
+      osnova,
+      pribitek,
       stevilo: selectedProject.stevilo,
       timestamp: serverTimestamp(),
       vodja: selectedProject.vodja,
+      email: selectedProject.email || "",
       znesek: skupniZnesek,
       znesekUgodnosti,
       znesekTRR,
@@ -107,9 +125,7 @@ export default function Projekti() {
     };
 
     await setDoc(projectRef, recentProject);
-    alert(
-      `Projekt izplačan (${skupniZnesek} EUR): ${znesekUgodnosti}€ ugodnosti, ${znesekTRR}€ TRR.`
-    );
+
     setPayDialogOpen(false);
   };
 
@@ -124,26 +140,32 @@ export default function Projekti() {
     setFormOpen(false);
   };
 
-  const { columns, rows } = useProjektiData(refreshKey, handleEditProject, openPayDialog);
-  const navigate = useNavigate();
+  const { columns, rows, filters } = useProjektiData(
+    refreshKey,
+    handleEditProject,
+    openPayDialog,
+    filterYear,
+    filterMonth,
+    filterPodrocje,
+    filterVodja
+  );
+
+  const { years = [], months = [], podrocja = [], vodje = [] } = filters || {};
+
+  const sortedRows = [...rows].sort((a, b) => {
+    const numA = Number(a.stevilo) || 0;
+    const numB = Number(b.stevilo) || 0;
+    return numA - numB;
+  });
+
+  const filteredRows = sortedRows.filter((row) =>
+    Object.values(row).some((val) => String(val).toLowerCase().includes(searchText.toLowerCase()))
+  );
 
   return (
     <DashboardLayout>
+      <div style={backgroundStyle} />
       <DashboardNavbar />
-
-      <Button
-        variant="contained"
-        color="info"
-        onClick={() =>
-          window.open(
-            "https://drive.google.com/drive/folders/1JhrreQM3fF9CJDTHk-dB_JVpKPFYCoLX",
-            "_blank"
-          )
-        }
-        style={{ margin: "16px" }}
-      >
-        Pojdi na Google Drive
-      </Button>
 
       <MDBox pt={6} pb={3}>
         <Grid container spacing={6}>
@@ -161,12 +183,110 @@ export default function Projekti() {
                 display="flex"
                 justifyContent="space-between"
                 alignItems="center"
+                flexWrap="wrap"
+                gap={2}
               >
                 <MDTypography variant="h6" color="white">
                   Projekti
                 </MDTypography>
 
                 <MDBox display="flex" alignItems="center" gap={1}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Select
+                      size="small"
+                      value={filterYear}
+                      onChange={(e) => setFilterYear(e.target.value)}
+                      displayEmpty
+                      sx={{
+                        borderRadius: 1,
+                        height: "34px",
+                        background: "white",
+                        minWidth: 100,
+                      }}
+                    >
+                      <MenuItem value="">Vsa leta</MenuItem>
+                      {years.map((y) => (
+                        <MenuItem key={y} value={y}>
+                          {y}
+                        </MenuItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      size="small"
+                      value={filterMonth}
+                      onChange={(e) => setFilterMonth(e.target.value)}
+                      displayEmpty
+                      sx={{
+                        borderRadius: 1,
+                        height: "34px",
+                        background: "white",
+                        minWidth: 120,
+                      }}
+                    >
+                      <MenuItem value="">Vsi meseci</MenuItem>
+                      {months.map((m) => (
+                        <MenuItem key={m.value} value={m.value}>
+                          {m.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      size="small"
+                      value={filterPodrocje}
+                      onChange={(e) => setFilterPodrocje(e.target.value)}
+                      displayEmpty
+                      sx={{
+                        borderRadius: 1,
+                        height: "34px",
+                        background: "white",
+                        minWidth: 120,
+                      }}
+                    >
+                      <MenuItem value="">Vsa področja</MenuItem>
+                      {podrocja.map((p) => (
+                        <MenuItem key={p} value={p}>
+                          {p}
+                        </MenuItem>
+                      ))}
+                    </Select>
+
+                    <Select
+                      size="small"
+                      value={filterVodja}
+                      onChange={(e) => setFilterVodja(e.target.value)}
+                      displayEmpty
+                      sx={{
+                        borderRadius: 1,
+                        height: "34px",
+                        background: "white",
+                        minWidth: 140,
+                      }}
+                    >
+                      <MenuItem value="">Vsi vodje</MenuItem>
+                      {vodje.map((v) => (
+                        <MenuItem key={v} value={v}>
+                          {v}
+                        </MenuItem>
+                      ))}
+                    </Select>
+
+                    <TextField
+                      size="small"
+                      placeholder="Išči..."
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      sx={{
+                        borderRadius: 1,
+                        height: "34px",
+                        "& .MuiInputBase-input": { padding: "8px 8px" },
+                        minWidth: 180,
+                        background: "white",
+                      }}
+                    />
+                  </Box>
+
                   <MDButton
                     variant="outlined"
                     color="white"
@@ -175,6 +295,7 @@ export default function Projekti() {
                   >
                     Dodaj projekt
                   </MDButton>
+
                   <IconButton color="inherit" onClick={() => setModalOpen(true)}>
                     <FullscreenIcon />
                     <MDTypography variant="caption" color="white" ml={1}>
@@ -186,7 +307,7 @@ export default function Projekti() {
 
               <MDBox pt={3}>
                 <DataTable
-                  table={{ columns, rows }}
+                  table={{ columns, rows: filteredRows }}
                   isSorted={false}
                   entriesPerPage={false}
                   showTotalEntries={false}
@@ -202,9 +323,7 @@ export default function Projekti() {
 
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <MDTypography variant="h5">
-            {editingProject ? "Uredi projekt" : "Dodaj projekt"}
-          </MDTypography>
+          <MDTypography variant="h5">{editingProject ? "" : ""}</MDTypography>
           <IconButton
             onClick={() => setFormOpen(false)}
             sx={{ position: "absolute", right: 8, top: 8 }}
@@ -217,32 +336,48 @@ export default function Projekti() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={modalOpen} onClose={() => setModalOpen(false)} fullScreen>
-        <DialogTitle
+      <Dialog
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        fullScreen
+        PaperProps={{
+          sx: { bgcolor: "background.default" },
+        }}
+      >
+        <MDBox
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          px={3}
+          py={2}
           sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "16px",
+            background: (theme) =>
+              `linear-gradient(90deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`,
           }}
         >
-          <MDTypography variant="h5">Delovna tabela projektov</MDTypography>
-          <IconButton onClick={() => setModalOpen(false)} color="inherit">
+          <MDTypography variant="h5" color="white">
+            Delovna tabela projektov
+          </MDTypography>
+          <IconButton onClick={() => setModalOpen(false)} sx={{ color: "white" }}>
             <CloseIcon />
           </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <DataTable
-            table={{ columns, rows }}
-            isSorted={false}
-            entriesPerPage={false}
-            showTotalEntries={false}
-            noEndBorder
-          />
+        </MDBox>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Card sx={{ boxShadow: 4, borderRadius: 2 }}>
+            <MDBox p={2}>
+              <DataTable
+                table={{ columns, rows: filteredRows }}
+                isSorted={false}
+                entriesPerPage={false}
+                showTotalEntries={false}
+                noEndBorder
+              />
+            </MDBox>
+          </Card>
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog open={payDialogOpen} onClose={() => setPayDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Izplačilo projekta</DialogTitle>
         <DialogContent dividers>
@@ -267,9 +402,7 @@ export default function Projekti() {
             }}
             displayEmpty
           >
-            <MenuItem value="">
-              <em>Ni izbire</em>
-            </MenuItem>
+            <MenuItem value="">Ni izbire</MenuItem>
             {pribitekNaUdelezbo.map((item) => (
               <MenuItem key={item.udelezeni} value={item.udelezeni}>
                 {item.udelezeni} udeležencev - {item.pribitek} €
@@ -289,9 +422,7 @@ export default function Projekti() {
             }}
             displayEmpty
           >
-            <MenuItem value="">
-              <em>Ni izbire</em>
-            </MenuItem>
+            <MenuItem value="">Ni izbire</MenuItem>
             {urniPribitek.map((item) => (
               <MenuItem key={item.ure} value={item.ure}>
                 {item.ure} ure - {item.pribitek} €

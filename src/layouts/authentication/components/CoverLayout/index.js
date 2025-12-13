@@ -63,12 +63,10 @@ function CoverLayout({ coverHeight, image, children }) {
   );
 }
 
-// Setting default props for the CoverLayout
 CoverLayout.defaultProps = {
   coverHeight: "35vh",
 };
 
-// Typechecking props for the CoverLayout
 CoverLayout.propTypes = {
   coverHeight: PropTypes.string,
   image: PropTypes.string.isRequired,

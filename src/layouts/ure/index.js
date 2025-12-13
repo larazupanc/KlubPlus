@@ -7,6 +7,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
+import { useNavigate } from "react-router-dom";
 
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
@@ -25,18 +26,41 @@ import img3 from "assets/images/3.png";
 import img4 from "assets/images/4.png";
 import img5 from "assets/images/5.png";
 import img6 from "assets/images/6.png";
+import img7 from "assets/images/7.png";
+import img8 from "assets/images/8.png";
+import img9 from "assets/images/9.png";
+import img10 from "assets/images/10.png";
 
 const couponList = [
   { id: 0, name: "Pivnica Savinja", image: img1, maxQuantity: 2 },
   { id: 1, name: "Picerija Špica Laško", image: img2, maxQuantity: 2 },
   { id: 2, name: "As bar Debro", image: img3, maxQuantity: 2 },
   { id: 3, name: "Karting Center Celje", image: img4, maxQuantity: 2 },
-  { id: 4, name: "Vezava diplomske/magisterske naloge", image: img5, maxQuantity: 2 },
-  { id: 5, name: "Cepljenje proti Klopnemu meningitisu", image: img6, maxQuantity: 2 },
+  { id: 4, name: "Vezava diplomske/magisterske naloge", image: img5, maxQuantity: 1 },
+  { id: 5, name: "Cepljenje proti Klopnemu meningitisu", image: img6, maxQuantity: 1 },
+  { id: 6, name: "Smučarska karta", image: img7, maxQuantity: 2 },
+  { id: 7, name: "Cineplexx Celje", image: img8, maxQuantity: 2 },
+  { id: 8, name: "Smučarska karta", image: img9, maxQuantity: 2 },
+  { id: 9, name: "Smučarska karta", image: img10, maxQuantity: 2 },
 ];
 
 function UradneUre() {
+  const backgroundStyle = {
+    backgroundImage:
+      'url("https://drustvo-lak.si/wp-content/uploads/2018/06/30442526_1872977382722054_2501685945883951104_o.jpg")',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    minHeight: "100vh",
+    width: "100%",
+    position: "fixed",
+    opacity: 0.1,
+    top: 0,
+    left: 0,
+    zIndex: -1,
+  };
   const [startTime, setStartTime] = useState(null);
+  const navigate = useNavigate();
+
   const [elapsedTime, setElapsedTime] = useState(0);
   const [timerInterval, setTimerInterval] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -48,6 +72,7 @@ function UradneUre() {
   const [couponCheckDone, setCouponCheckDone] = useState(false);
   const [showCustomerNameDialog, setShowCustomerNameDialog] = useState(false);
   const [issuedCouponsLog, setIssuedCouponsLog] = useState([]);
+  const [note, setNote] = useState("");
   const [showSummaryDialog, setShowSummaryDialog] = useState(false);
 
   useEffect(() => {
@@ -97,6 +122,10 @@ function UradneUre() {
   };
 
   const handleCouponStart = () => {
+    setCustomerName("");
+    setCustomerUsage({});
+    setSelectedCoupons({});
+    setCouponCheckDone(false);
     setShowCustomerNameDialog(true);
   };
 
@@ -113,7 +142,10 @@ function UradneUre() {
     try {
       const now = new Date();
       const kuponiRef = collection(db, "kuponi");
-      const q = query(kuponiRef, where("customerName", "==", customerName.trim()));
+      const q = query(
+        kuponiRef,
+        where("customerNameLower", "==", customerName.trim().toLowerCase())
+      );
       const snapshot = await getDocs(q);
 
       const usage = {};
@@ -158,6 +190,7 @@ function UradneUre() {
     try {
       await addDoc(collection(db, "kuponi"), {
         customerName: customerName.trim(),
+        customerNameLower: customerName.trim().toLowerCase(),
         issuedBy: name || "neznano",
         time: new Date().toISOString(),
         coupons: selectedDetails,
@@ -191,18 +224,20 @@ function UradneUre() {
 
   return (
     <DashboardLayout>
+      <div style={backgroundStyle} />
+
       <DashboardNavbar />
       <MDBox mt={6} mb={3}>
         <MDBox mt={4} mx={3}>
           <MDTypography variant="h4" fontWeight="bold" gutterBottom>
             Uradne ure
           </MDTypography>
-          <MDTypography variant="body2" color="textSecondary" gutterBottom>
+          <MDTypography variant="body2" color="textPrimary" gutterBottom>
             Uradne ure potekajo vsak petek od 18:30 do 20:30 in v soboto od 10:00 do 12:00. Pred
-            začetkom uradnih ur preveri, če so v redalu vsi kupončki. Vsakemu članu na mesec
+            začetkom uradnih ur preveri, če so v pedalu vsi kupončki. Vsakemu članu na mesec
             pripada: 2 kupončka za špico, 2 za pivnico, 2 za kino, 2 za AS bar, 2 za Karting center
-            Celje. Na leto pa: 1 kupon za brezplačno članarino v knjižnici Laško, 30€ povračila za
-            cepljenje proti klopnemu meningitisu, ter 30€ za vezavo diplomske/magistrske naloge.
+            Celje. Na leto pa: 30€ povračila za cepljenje proti klopnemu meningitisu, ter 30€ za
+            vezavo diplomske/magistrske naloge.
           </MDTypography>
           <MDTypography variant="body2" color="textSecondary" mt={1} gutterBottom>
             Uradne ure začneš tako, da klikneš spodnji gumb.
@@ -283,7 +318,19 @@ function UradneUre() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Prekliči</Button>
+          <Button
+            onClick={() => {
+              setOpenDialog(false);
+              setShowCustomerNameDialog(false);
+              setCustomerName("");
+              setCustomerUsage({});
+              setSelectedCoupons({});
+              setCouponCheckDone(false);
+            }}
+          >
+            Prekliči
+          </Button>
+
           <Button onClick={handleDialogClose}>Potrdi</Button>
         </DialogActions>
       </Dialog>
@@ -299,7 +346,7 @@ function UradneUre() {
           <TextField
             autoFocus
             margin="dense"
-            label="Ime stranke"
+            label="Ime in priimek stranke"
             fullWidth
             variant="standard"
             value={customerName}
@@ -373,29 +420,79 @@ function UradneUre() {
             <MDTypography>Ni izdanih kuponov.</MDTypography>
           ) : (
             issuedCouponsLog.map((entry, idx) => (
-              <MDBox key={idx} mb={2}>
-                <MDTypography variant="h6">{entry.customer}</MDTypography>
-                <ul>
+              <MDBox key={idx} mb={3} p={2} border="1px solid #e0e0e0" borderRadius="12px">
+                <MDTypography variant="h6" gutterBottom>
+                  {entry.customer}
+                </MDTypography>
+                <MDBox component="ul" sx={{ pl: 3, mt: 1 }}>
                   {entry.coupons.map((c, i) => (
-                    <li key={i}>{c}</li>
+                    <li key={i}>
+                      <MDTypography variant="body2">{c}</MDTypography>
+                    </li>
                   ))}
-                </ul>
+                </MDBox>
               </MDBox>
             ))
           )}
+
+          <MDBox mt={3}>
+            <TextField
+              label="Opomba"
+              multiline
+              rows={3}
+              fullWidth
+              variant="outlined"
+              placeholder="Dodaj opombo..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </MDBox>
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={() => setShowSummaryDialog(false)}>Prekliči</Button>
           <Button
-            onClick={() => {
+            variant="contained"
+            color="error"
+            onClick={async () => {
+              if (startTime) {
+                const endTime = new Date().toISOString();
+                const lengthInSeconds = Math.floor(
+                  (new Date(endTime) - new Date(startTime)) / 1000
+                );
+
+                try {
+                  await addDoc(collection(db, "uradneUre"), {
+                    userName: name.trim(),
+                    startTime,
+                    endTime,
+                    lengthInSeconds,
+                    date: startTime.split("T")[0],
+                    note,
+                    issuedCoupons: issuedCouponsLog,
+                  });
+                } catch (err) {
+                  console.error("Napaka pri shranjevanju:", err);
+                }
+
+                clearInterval(timerInterval);
+                setStartTime(null);
+                setElapsedTime(0);
+                setIssuedCouponsLog([]);
+                setNote("");
+              }
+
               setShowSummaryDialog(false);
-              setOpenDialog(true);
             }}
           >
-            Potrdi in končaj
+            Zaključi uradne ure
           </Button>
         </DialogActions>
       </Dialog>
+      <MDBox mt={3}>
+        <MDButton variant="gradient" color="info" onClick={() => navigate("/zgodovinaUradnihUr")}>
+          Zgodovina uradnih ur
+        </MDButton>
+      </MDBox>
     </DashboardLayout>
   );
 }

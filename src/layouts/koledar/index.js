@@ -46,6 +46,19 @@ const allowedSlots = {
 };
 
 function Koledar() {
+  const backgroundStyle = {
+    backgroundImage:
+      'url("https://www.moja-dejavnost.si/media/upload/company/2025/07/546133_vpis-v-laski-akademski-klub-5-1024x1024-.jpg")',
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    minHeight: "100vh",
+    width: "100%",
+    position: "fixed",
+    opacity: 0.1,
+    top: 0,
+    left: 0,
+    zIndex: -1,
+  };
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
   const [bookedDates, setBookedDates] = useState([]);
@@ -58,6 +71,21 @@ function Koledar() {
   const [filters, setFilters] = useState({ uradneUre: true, dogodki: true, sestanki: true });
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+  const slovenskiMeseci = {
+    January: "Januar",
+    February: "Februar",
+    March: "Marec",
+    April: "April",
+    May: "Maj",
+    June: "Junij",
+    July: "Julij",
+    August: "Avgust",
+    September: "September",
+    October: "Oktober",
+    November: "November",
+    December: "December",
+  };
+  const prevediMesec = (mesec) => slovenskiMeseci[mesec] || mesec;
 
   useEffect(() => {
     generateCalendar();
@@ -136,21 +164,10 @@ function Koledar() {
     fetchBookings();
   };
 
-  const downloadExcel = () => {
-    const data = bookedDates.map((b) => ({
-      Datum: b.date,
-      Termin: b.slot,
-      Ime: b.name,
-      Email: b.email || "",
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Rezervacije");
-    XLSX.writeFile(workbook, `rezervacije_${format(currentMonth, "MM_yyyy")}.xlsx`);
-  };
-
   return (
     <DashboardLayout>
+      <div style={backgroundStyle} />
+
       <DashboardNavbar />
       <MDBox display="flex" justifyContent="space-between" alignItems="center" mt={4}>
         <Typography variant="h4">Koledar uradnih ur, sestankov in projektov</Typography>
@@ -186,8 +203,9 @@ function Koledar() {
           <ArrowBack />
         </IconButton>
         <Typography variant="h6" sx={{ mx: 2 }}>
-          {format(currentMonth, "MMMM yyyy")}
+          {prevediMesec(format(currentMonth, "MMMM"))} {format(currentMonth, "yyyy")}
         </Typography>
+
         <IconButton onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
           <ArrowForward />
         </IconButton>
@@ -264,13 +282,19 @@ function Koledar() {
         })}
       </Grid>
 
-      <Grid container justifyContent="center" mt={4}>
-        <MDButton variant="gradient" color="info" onClick={downloadExcel}>
-          Prenesi Excel za mesec
-        </MDButton>
-      </Grid>
-
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            minHeight: 300,
+            minWidth: 500,
+            p: 2,
+          },
+        }}
+      >
         <DialogTitle>Vpis na uradne ure</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
@@ -280,13 +304,14 @@ function Koledar() {
             Termin: {selectedDate && allowedSlots[(getDay(selectedDate) + 6) % 7].time}
           </Typography>
           <FormControl fullWidth margin="dense">
-            <InputLabel id="user-select-label">Izberi osebo</InputLabel>
             <Select
-              labelId="user-select-label"
               value={selectedUser}
               onChange={(e) => setSelectedUser(e.target.value)}
-              label="Izberi osebo"
-              renderValue={(user) => user?.name || ""}
+              displayEmpty
+              renderValue={(user) =>
+                user?.name || <span style={{ color: "#999" }}>Izberi osebo</span>
+              }
+              sx={{ height: 56 }}
             >
               {users.map((user) => (
                 <MenuItem key={user.email} value={user}>

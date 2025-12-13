@@ -32,11 +32,11 @@ function SestankiOverview() {
 
   const getColorByTopic = (topic) => {
     const lower = (topic || "").toLowerCase();
-    if (lower.includes("šport") || lower.includes("sport")) return "success"; // green
-    if (lower.includes("zabava")) return "error"; // pink
-    if (lower.includes("izobrazevanje")) return "info"; // blue
-    if (lower.includes("dobrodelnost")) return "warning"; // orange
-    return "secondary"; // yellow/other
+    if (lower.includes("šport") || lower.includes("sport")) return "success";
+    if (lower.includes("zabava")) return "error";
+    if (lower.includes("izobrazevanje")) return "info";
+    if (lower.includes("dobrodelnost")) return "warning";
+    return "secondary";
   };
 
   const parseDateTime = (date, time) => {

@@ -1,9 +1,10 @@
 import Dashboard from "layouts/dashboard";
-import Profile from "layouts/profile";
+import Profil from "layouts/profil";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import Sestanki from "layouts/sestanki";
 import Projekti from "layouts/projekti";
+import Pomocnik from "layouts/pomocnik";
 import Ure from "layouts/ure";
 import Koledar from "layouts/koledar";
 import Izplacila from "layouts/izplacila";
@@ -11,9 +12,11 @@ import UrediVloge from "layouts/vloge";
 import KonstantePage from "layouts/konstante";
 import Icon from "@mui/material/Icon";
 import PodrobnostiPlacil from "layouts/podrobnostiplacil";
-import UgodnostiPage from "layouts/ugodnosti/UgodnostiPage";
+import Ugodnosti from "layouts/ugodnosti/index.js";
+import VodjaStran from "layouts/vodje";
+import ZgodovinaUradnihUr from "layouts/ure/ZgodovinaUradnihUr";
+import PinProtectedRoute from "PinProtectedRoute";
 import RezervacijaProstora from "layouts/rezervacijaProstor/rezervacijaProstora";
-import UgodnostiPodrobnostiPage from "layouts/ugodnosti/UgodnostiPodrobnostiPage";
 const routes = [
   {
     type: "collapse",
@@ -30,6 +33,14 @@ const routes = [
     icon: <Icon fontSize="small">notifications</Icon>,
     route: "/ure",
     component: <Ure />,
+  },
+  {
+    type: "route",
+    name: "Zgodovinauradnihur",
+    key: "zgodovinauradnih",
+    icon: <Icon fontSize="small">redeem </Icon>,
+    route: "/zgodovinaUradnihUr",
+    component: <ZgodovinaUradnihUr />,
   },
   {
     type: "route",
@@ -56,6 +67,18 @@ const routes = [
     component: <Projekti />,
   },
   {
+    type: "route",
+    name: "Uporabniki",
+    key: "uporabniki",
+    icon: <Icon fontSize="small">task</Icon>,
+    route: "/uporabniki",
+    component: (
+      <PinProtectedRoute>
+        <Profil />
+      </PinProtectedRoute>
+    ),
+  },
+  {
     type: "collapse",
     name: "Koledar",
     key: "koledar",
@@ -65,49 +88,68 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "Rezervacija Prostora",
-    key: "Rezervacija Prostora",
-    icon: <Icon fontSize="small">calendar_month</Icon>,
-    route: "/rezervacijaProstora",
+    name: "Rezervacija prostora",
+    key: "Rezervacija prostora",
+    icon: <Icon fontSize="small">meeting_room</Icon>,
+    route: "/rezervacija",
     component: <RezervacijaProstora />,
   },
   {
     type: "route",
     name: "Profil",
-    key: "profile",
-    route: "/profile",
-    component: <Profile />,
+    key: "profil",
+    route: "/profil",
+    component: <profil />,
   },
   {
-    type: "collapse",
+    type: "route",
+    name: "vodjaStran",
+    key: "vodjaStran",
+    route: "/vodjaStran",
+    component: <VodjaStran />,
+  },
+  {
+    type: "route",
     name: "Mesečna izplačila",
     key: "izplacila",
     icon: <Icon fontSize="small">account_balance_wallet </Icon>,
     route: "/izplacila",
-    component: <Izplacila />,
+    component: (
+      <PinProtectedRoute>
+        <Izplacila />
+      </PinProtectedRoute>
+    ),
   },
   {
     type: "collapse",
     name: "Ugodnosti",
     key: "ugodnosti",
-    icon: <Icon fontSize="small">account_balance_wallet </Icon>,
+    icon: <Icon fontSize="small">redeem </Icon>,
     route: "/ugodnosti",
-    component: <UgodnostiPage />,
+    component: <Ugodnosti />,
   },
+
   {
-    type: "collapse",
+    type: "route",
     name: "Vloge",
     key: "urediVloge",
-    icon: <Icon fontSize="small">groups</Icon>,
     route: "/vloge",
-    component: <UrediVloge />,
+    component: (
+      <PinProtectedRoute>
+        <UrediVloge />
+      </PinProtectedRoute>
+    ),
   },
   {
     type: "route",
     name: "Konstante",
     key: "konstante",
     route: "/konstante",
-    component: <KonstantePage />,
+    component: (
+      <PinProtectedRoute>
+        <KonstantePage />
+      </PinProtectedRoute>
+    ),
   },
   {
     type: "route",
@@ -122,13 +164,6 @@ const routes = [
     key: "sign-up",
     route: "/authentication/sign-up",
     component: <SignUp />,
-  },
-  {
-    type: "route",
-    name: "UgodnostiPodrobnostiPage",
-    key: "ugodnosti/podrobnosti",
-    route: "/ugodnosti/podrobnosti",
-    component: <UgodnostiPodrobnostiPage />,
   },
 ];
 

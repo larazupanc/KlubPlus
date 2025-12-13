@@ -85,6 +85,7 @@ export default function ProjektiForm({ onAdd, editingProject }) {
             { label: "Številka projekta", name: "stevilo" },
             { label: "Opis", name: "opis" },
             { label: "Vodja", name: "vodja" },
+            { label: "Email vodje", name: "emailVodje", type: "email" },
             { label: "Datum", name: "datum", type: "date" },
             { label: "Lokacija", name: "lokacija" },
             { label: "Ura", name: "ura", type: "time" },
@@ -106,7 +107,12 @@ export default function ProjektiForm({ onAdd, editingProject }) {
           ))}
 
           <Grid item xs={12}>
-            <Button type="submit" variant="contained" color="primary">
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              sx={{ color: "white !important" }}
+            >
               {editingProject ? "Posodobi projekt" : "Dodaj projekt"}
             </Button>
           </Grid>

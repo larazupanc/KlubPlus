@@ -13,8 +13,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { db } from "firebaseConfig";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { serverTimestamp, collection, addDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp, collection, addDoc } from "firebase/firestore";
 
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -49,8 +48,7 @@ const defaultKonstante = {
 
 export default function KonstantePage() {
   const [konstante, setKonstante] = useState(defaultKonstante);
-  const [editing, setEditing] = useState(false);
-  const [password, setPassword] = useState("");
+  const [editing, setEditing] = useState(true);
 
   const konstanteRef = doc(db, "nastavitve", "konstante");
 
@@ -65,11 +63,6 @@ export default function KonstantePage() {
     fetchKonstante();
   }, []);
 
-  const handlePasswordSubmit = () => {
-    if (password === "Lara123") setEditing(true);
-    else alert("Napačno geslo!");
-  };
-
   const handleSave = async () => {
     const dataWithTimestamp = {
       ...konstante,
@@ -78,6 +71,7 @@ export default function KonstantePage() {
 
     try {
       await setDoc(konstanteRef, dataWithTimestamp);
+
       const historyRef = collection(db, "nastavitve", "konstante", "history");
       await addDoc(historyRef, {
         ...konstante,
@@ -85,7 +79,6 @@ export default function KonstantePage() {
       });
 
       alert("Shranjeno in zabeleženo!");
-      setEditing(false);
     } catch (error) {
       console.error("Napaka pri shranjevanju:", error);
       alert("Napaka pri shranjevanju!");
@@ -120,174 +113,120 @@ export default function KonstantePage() {
           <Grid item xs={12}>
             <MuiCard>
               <MDBox p={3}>
-                <MDTypography variant="h4" gutterBottom>
-                  Konstante dogodkov
+                <MDTypography variant="h5" gutterBottom>
+                  Konstante dogodkov in honorarjev
                 </MDTypography>
 
-                {!editing ? (
-                  <>
-                    <TextField
-                      label="Geslo za urejanje"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      fullWidth
-                    />
-                    <MDBox mt={2}>
-                      <Button variant="contained" onClick={handlePasswordSubmit}>
-                        Potrdi
-                      </Button>
-                    </MDBox>
-                  </>
-                ) : (
-                  <CardContent style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <Accordion>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">Dogodki</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <TextField
-                          label="Osnovna vrednost (€)"
-                          type="number"
-                          value={konstante.osnova}
-                          onChange={(e) => handleSimpleChange("osnova", e.target.value)}
-                          fullWidth
-                        />
+                <CardContent style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <Accordion>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6">Dogodki</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <TextField
+                        label="Osnovna vrednost (€)"
+                        type="number"
+                        value={konstante.osnova}
+                        onChange={(e) => handleSimpleChange("osnova", e.target.value)}
+                        fullWidth
+                      />
 
-                        <Divider sx={{ my: 2 }} />
-                        <MDTypography variant="h6">Pribitek na udeležbo</MDTypography>
-                        {konstante.pribitekNaUdelezbo.map((item, i) => (
-                          <Grid container spacing={2} key={i}>
-                            <Grid item xs={6}>
-                              <TextField
-                                label={`Udeleženi (${item.udelezeni})`}
-                                type="number"
-                                value={item.udelezeni}
-                                disabled
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={6}>
-                              <TextField
-                                label="Pribitek (€)"
-                                type="number"
-                                value={item.pribitek}
-                                onChange={(e) =>
-                                  handleNestedChange(
-                                    "pribitekNaUdelezbo",
-                                    i,
-                                    "pribitek",
-                                    e.target.value
-                                  )
-                                }
-                                fullWidth
-                              />
-                            </Grid>
-                          </Grid>
-                        ))}
-
-                        <Divider sx={{ my: 2 }} />
-                        <MDTypography variant="h6" gutterBottom>
-                          Deleži izplačila
-                        </MDTypography>
-                        <Grid container spacing={2}>
+                      <Divider sx={{ my: 2 }} />
+                      <MDTypography variant="h6">Pribitek na udeležbo</MDTypography>
+                      {konstante.pribitekNaUdelezbo.map((item, i) => (
+                        <Grid container spacing={2} key={i}>
                           <Grid item xs={6}>
                             <TextField
-                              label="Na transakcijski račun"
+                              label={`Udeleženi (${item.udelezeni})`}
                               type="number"
-                              value={konstante.delezi?.transakcijskiRacun ?? 0}
-                              onChange={(e) =>
-                                handleDelezChange("transakcijskiRacun", e.target.value)
-                              }
+                              value={item.udelezeni}
+                              disabled
                               fullWidth
                             />
                           </Grid>
                           <Grid item xs={6}>
                             <TextField
-                              label="V klubskih ugodnostih"
+                              label="Pribitek (€)"
                               type="number"
-                              value={konstante.delezi?.klubskeUgodnosti ?? 0}
+                              value={item.pribitek}
                               onChange={(e) =>
-                                handleDelezChange("klubskeUgodnosti", e.target.value)
+                                handleNestedChange(
+                                  "pribitekNaUdelezbo",
+                                  i,
+                                  "pribitek",
+                                  e.target.value
+                                )
                               }
                               fullWidth
                             />
                           </Grid>
                         </Grid>
-                      </AccordionDetails>
-                    </Accordion>
+                      ))}
 
-                    <Accordion>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">Mesečni honorarji</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Grid container spacing={2}>
-                          {konstante.mesecniHonorarji &&
-                            Object.entries(konstante.mesecniHonorarji).map(
-                              ([key, value], index) => (
-                                <Grid item xs={6} key={index}>
-                                  <TextField
-                                    label={key}
-                                    type="number"
-                                    value={value}
-                                    onChange={(e) =>
-                                      setKonstante((prev) => ({
-                                        ...prev,
-                                        mesecniHonorarji: {
-                                          ...prev.mesecniHonorarji,
-                                          [key]: parseFloat(e.target.value),
-                                        },
-                                      }))
-                                    }
-                                    fullWidth
-                                  />
-                                </Grid>
-                              )
-                            )}
+                      <Divider sx={{ my: 2 }} />
+                      <MDTypography variant="h6" gutterBottom>
+                        Deleži izplačila
+                      </MDTypography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <TextField
+                            label="Na transakcijski račun"
+                            type="number"
+                            value={konstante.delezi.transakcijskiRacun}
+                            onChange={(e) =>
+                              handleDelezChange("transakcijskiRacun", e.target.value)
+                            }
+                            fullWidth
+                          />
                         </Grid>
-                      </AccordionDetails>
-                    </Accordion>
+                        <Grid item xs={6}>
+                          <TextField
+                            label="V klubskih ugodnostih"
+                            type="number"
+                            value={konstante.delezi.klubskeUgodnosti}
+                            onChange={(e) => handleDelezChange("klubskeUgodnosti", e.target.value)}
+                            fullWidth
+                          />
+                        </Grid>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
 
-                    <Accordion>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">Uradne ure</Typography>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        {konstante.urniPribitek.map((item, i) => (
-                          <Grid container spacing={2} key={i}>
-                            <Grid item xs={6}>
-                              <TextField
-                                label={`Ure do ${item.ure}`}
-                                type="number"
-                                value={item.ure}
-                                disabled
-                                fullWidth
-                              />
-                            </Grid>
-                            <Grid item xs={6}>
-                              <TextField
-                                label="Pribitek (€)"
-                                type="number"
-                                value={item.pribitek}
-                                onChange={(e) =>
-                                  handleNestedChange("urniPribitek", i, "pribitek", e.target.value)
-                                }
-                                fullWidth
-                              />
-                            </Grid>
+                  <Accordion>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="h6">Mesečni honorarji</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Grid container spacing={2}>
+                        {Object.entries(konstante.mesecniHonorarji).map(([key, value], index) => (
+                          <Grid item xs={6} key={index}>
+                            <TextField
+                              label={key}
+                              type="number"
+                              value={value}
+                              onChange={(e) =>
+                                setKonstante((prev) => ({
+                                  ...prev,
+                                  mesecniHonorarji: {
+                                    ...prev.mesecniHonorarji,
+                                    [key]: parseFloat(e.target.value),
+                                  },
+                                }))
+                              }
+                              fullWidth
+                            />
                           </Grid>
                         ))}
-                      </AccordionDetails>
-                    </Accordion>
+                      </Grid>
+                    </AccordionDetails>
+                  </Accordion>
 
-                    <MDBox mt={3}>
-                      <Button variant="contained" color="primary" onClick={handleSave}>
-                        Shrani
-                      </Button>
-                    </MDBox>
-                  </CardContent>
-                )}
+                  <MDBox mt={3}>
+                    <Button variant="contained" color="primary" onClick={handleSave}>
+                      Shrani
+                    </Button>
+                  </MDBox>
+                </CardContent>
               </MDBox>
             </MuiCard>
           </Grid>

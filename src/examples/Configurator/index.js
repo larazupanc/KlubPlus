@@ -124,10 +124,7 @@ function Configurator() {
           alignItems="center"
           mt={3}
           lineHeight={1}
-        >
-          <MDTypography variant="h6">Svetla/ temna tema</MDTypography>
-          <Switch checked={darkMode} onChange={handleDarkMode} />
-        </MDBox>
+        ></MDBox>
       </MDBox>
       <MDBox mt={4}>
         <MDButton variant="gradient" color="dark" fullWidth component="a" href="/konstante">

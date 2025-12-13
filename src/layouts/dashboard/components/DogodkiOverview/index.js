@@ -32,11 +32,11 @@ function ProjektiOverview() {
 
   const getColorByPodrocje = (podrocje) => {
     const lower = (podrocje || "").toLowerCase();
-    if (lower.includes("šport") || lower.includes("sport")) return "success"; // green
-    if (lower.includes("zabava")) return "error"; // pink/red
-    if (lower.includes("izobrazevanje")) return "info"; // blue
-    if (lower.includes("dobrodelnost")) return "warning"; // orange
-    return "secondary"; // yellow for other
+    if (lower.includes("šport") || lower.includes("sport")) return "success";
+    if (lower.includes("zabava")) return "error";
+    if (lower.includes("izobrazevanje")) return "info";
+    if (lower.includes("dobrodelnost")) return "warning";
+    return "secondary";
   };
 
   const parseDateTime = (datum, ura) => {

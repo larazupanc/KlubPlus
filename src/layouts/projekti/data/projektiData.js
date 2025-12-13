@@ -1,13 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  setDoc,
-  getDoc,
-  serverTimestamp,
-} from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { db } from "firebaseConfig";
 
 import IconButton from "@mui/material/IconButton";
@@ -80,8 +72,16 @@ const handleGeneratePlan = async (project) => {
   }
 };
 
-export default function useProjektiData(refreshKey, onEdit, openPayDialog) {
-  const [data, setData] = useState({ columns: [], rows: [] });
+export default function useProjektiData(
+  refreshKey,
+  onEdit,
+  openPayDialog,
+  filterYear = "",
+  filterMonth = "",
+  filterPodrocje = "",
+  filterVodja = ""
+) {
+  const [data, setData] = useState({ columns: [], rows: [], filters: {} });
 
   const handleDelete = async (id) => {
     try {
@@ -98,38 +98,82 @@ export default function useProjektiData(refreshKey, onEdit, openPayDialog) {
   useEffect(() => {
     const fetchData = async () => {
       const querySnapshot = await getDocs(collection(db, "projekti"));
-      const rows = querySnapshot.docs.map((docSnap) => {
+
+      const rawRows = querySnapshot.docs.map((docSnap) => {
         const project = docSnap.data();
 
         return {
           id: docSnap.id,
           ...project,
+        };
+      });
+
+      const yearsSet = new Set();
+      const monthsSet = new Set();
+      const podrocjaSet = new Set();
+      const vodjeSet = new Set();
+
+      rawRows.forEach((row) => {
+        const datum = row.datum || "";
+        const parts = String(datum).split("-");
+        if (parts.length >= 3) {
+          const [y, m] = parts;
+          if (y) yearsSet.add(y);
+          if (m) monthsSet.add(m);
+        }
+        if (row.podrocje) podrocjaSet.add(row.podrocje);
+        if (row.vodja) vodjeSet.add(row.vodja);
+      });
+
+      const months = Array.from(monthsSet)
+        .sort()
+        .map((m) => {
+          const labels = {
+            "01": "Januar",
+            "02": "Februar",
+            "03": "Marec",
+            "04": "April",
+            "05": "Maj",
+            "06": "Junij",
+            "07": "Julij",
+            "08": "Avgust",
+            "09": "September",
+            10: "Oktober",
+            11: "November",
+            12: "December",
+          };
+          return { value: m, label: labels[m] || m };
+        });
+
+      const years = Array.from(yearsSet).sort();
+      const podrocja = Array.from(podrocjaSet).sort();
+      const vodje = Array.from(vodjeSet).sort();
+
+      let rows = rawRows.map((row) => {
+        return {
+          ...row,
           action: (
             <>
-              <IconButton onClick={() => onEdit({ id: docSnap.id, ...project })} title="Uredi">
+              <IconButton onClick={() => onEdit({ id: row.id, ...row })} title="Uredi">
                 <EditIcon />
               </IconButton>
-
-              <IconButton onClick={() => handleDelete(docSnap.id)} title="Izbriši">
+              <IconButton onClick={() => handleDelete(row.id)} title="Izbriši">
                 <DeleteIcon />
               </IconButton>
-
               <IconButton
-                onClick={() => handleGeneratePlan({ id: docSnap.id, ...project })}
+                onClick={() => handleGeneratePlan({ id: row.id, ...row })}
                 title="Prenesi načrt"
               >
                 <DownloadIcon />
               </IconButton>
-
               <IconButton
-                onClick={() => handleGenerateReport({ id: docSnap.id, ...project })}
+                onClick={() => handleGenerateReport({ id: row.id, ...row })}
                 title="Prenesi poročilo"
               >
                 <DownloadIcon />
               </IconButton>
-
               <IconButton
-                onClick={() => openPayDialog({ id: docSnap.id, ...project })}
+                onClick={() => openPayDialog({ id: row.id, ...row })}
                 title="Odpri plačilni dialog"
               >
                 <PaidIcon />
@@ -138,6 +182,27 @@ export default function useProjektiData(refreshKey, onEdit, openPayDialog) {
           ),
         };
       });
+
+      if (filterYear || filterMonth || filterPodrocje || filterVodja) {
+        rows = rows.filter((row) => {
+          const datum = row.datum || "";
+          let year = "";
+          let month = "";
+
+          const parts = String(datum).split("-");
+          if (parts.length >= 3) {
+            year = parts[0];
+            month = parts[1];
+          }
+
+          if (filterYear && year !== filterYear) return false;
+          if (filterMonth && month !== filterMonth) return false;
+          if (filterPodrocje && row.podrocje !== filterPodrocje) return false;
+          if (filterVodja && row.vodja !== filterVodja) return false;
+
+          return true;
+        });
+      }
 
       setData({
         columns: [
@@ -153,11 +218,17 @@ export default function useProjektiData(refreshKey, onEdit, openPayDialog) {
           { Header: "Več", accessor: "action", align: "center", disableSortBy: true },
         ],
         rows,
+        filters: {
+          years,
+          months,
+          podrocja,
+          vodje,
+        },
       });
     };
 
     fetchData();
-  }, [refreshKey, onEdit, openPayDialog]);
+  }, [refreshKey, onEdit, openPayDialog, filterYear, filterMonth, filterPodrocje, filterVodja]);
 
   return data;
 }

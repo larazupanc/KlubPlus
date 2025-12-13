@@ -1,22 +1,20 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "firebaseConfig";
+
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
+
 import Card from "@mui/material/Card";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
 import IconButton from "@mui/material/IconButton";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+
 import MDTypography from "components/MDTypography";
 import MDBox from "components/MDBox";
+
+import DataTable from "examples/Tables/DataTable";
 
 function PlacilaInProjektiPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -28,17 +26,8 @@ function PlacilaInProjektiPage() {
       const placilaSnap = await getDocs(collection(db, "placila"));
       const projektiSnap = await getDocs(collection(db, "izplacani_projekti"));
 
-      const placilaData = placilaSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      const projektiData = projektiSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setPlacila(placilaData);
-      setProjekti(projektiData);
+      setPlacila(placilaSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setProjekti(projektiSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     };
 
     fetchData();
@@ -66,6 +55,7 @@ function PlacilaInProjektiPage() {
     payments.forEach((p) => {
       peopleSet.add(`${p.name}|||${p.email}`);
     });
+
     return Array.from(peopleSet).map((entry) => {
       const [name, email] = entry.split("|||");
       return { name, email };
@@ -74,7 +64,7 @@ function PlacilaInProjektiPage() {
 
   const getAmountFor = (person, payments) => {
     const payment = payments.find((p) => p.name === person.name && p.email === person.email);
-    return payment ? `${payment.amount}€` : "-";
+    return payment ? `${payment.amount} €` : "-";
   };
 
   const people = getAllPeople(placilaInMonth);
@@ -93,90 +83,78 @@ function PlacilaInProjektiPage() {
     setCurrentMonth(newDate);
   };
 
+  const columnsPlacila = [
+    { Header: "Ime", accessor: "name" },
+    { Header: "Email", accessor: "email" },
+    { Header: "Znesek", accessor: "amount" },
+  ];
+
+  const rowsPlacila = people.map((person) => ({
+    name: person.name,
+    email: person.email,
+    amount: getAmountFor(person, placilaInMonth),
+  }));
+
+  const columnsProjekti = [
+    { Header: "Naziv", accessor: "naziv" },
+    { Header: "Vodja", accessor: "vodja" },
+    { Header: "Način", accessor: "metoda" },
+    { Header: "Znesek TRR", accessor: "znesek" },
+  ];
+
+  const rowsProjekti = projektiInMonth.map((item) => ({
+    naziv: item.naziv,
+    vodja: item.vodja,
+    metoda: item.metoda,
+    znesek: `${item.znesekTRR} €`,
+  }));
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
+
       <MDBox py={3}>
         <Card sx={{ p: 3 }}>
           <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={4}>
             <IconButton onClick={handlePrevMonth}>
               <ArrowBackIosIcon />
             </IconButton>
+
             <MDTypography variant="h5">
               Podatki za {monthName} {year}
             </MDTypography>
+
             <IconButton onClick={handleNextMonth}>
               <ArrowForwardIosIcon />
             </IconButton>
           </MDBox>
 
-          {}
-          <MDTypography variant="h6" mb={1}>
+          <MDTypography variant="h6" mb={2}>
             Plačila iz mesečnih honorarjev
           </MDTypography>
-          <TableContainer component={Paper} sx={{ mb: 5 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>
-                    <strong>Ime</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Email</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Znesek</strong>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {people.map((person) => (
-                  <TableRow key={person.email}>
-                    <TableCell>{person.name}</TableCell>
-                    <TableCell>{person.email}</TableCell>
-                    <TableCell>{getAmountFor(person, placilaInMonth)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
 
-          {}
-          <MDTypography variant="h6" mb={1}>
+          <DataTable
+            table={{ columns: columnsPlacila, rows: rowsPlacila }}
+            isSorted={false}
+            entriesPerPage={false}
+            showTotalEntries={false}
+            noEndBorder
+          />
+
+          <MDTypography variant="h6" mt={5} mb={2}>
             Izplačani projekti
           </MDTypography>
-          <TableContainer component={Paper}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>
-                    <strong>Naziv</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Vodja</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Metoda</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Znesek TRR</strong>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {projektiInMonth.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.naziv}</TableCell>
-                    <TableCell>{item.vodja}</TableCell>
-                    <TableCell>{item.metoda}</TableCell>
-                    <TableCell>{item.znesekTRR} €</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+
+          <DataTable
+            table={{ columns: columnsProjekti, rows: rowsProjekti }}
+            isSorted={false}
+            entriesPerPage={false}
+            showTotalEntries={false}
+            noEndBorder
+          />
         </Card>
       </MDBox>
+
       <Footer />
     </DashboardLayout>
   );

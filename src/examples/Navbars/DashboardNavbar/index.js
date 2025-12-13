@@ -10,7 +10,6 @@ import Icon from "@mui/material/Icon";
 
 import MDBox from "components/MDBox";
 import Breadcrumbs from "examples/Breadcrumbs";
-import NotificationItem from "examples/Items/NotificationItem";
 
 import {
   navbar,
@@ -50,14 +49,6 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
 
-  const renderMenu = () => (
-    <Menu anchorEl={openMenu} open={Boolean(openMenu)} onClose={handleCloseMenu} sx={{ mt: 2 }}>
-      <NotificationItem icon={<Icon>email</Icon>} title="Check new messages" />
-      <NotificationItem icon={<Icon>podcasts</Icon>} title="Manage Podcast sessions" />
-      <NotificationItem icon={<Icon>shopping_cart</Icon>} title="Payment completed" />
-    </Menu>
-  );
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -87,23 +78,22 @@ function DashboardNavbar({ absolute, light, isMini }) {
         <MDBox sx={(theme) => navbarRow(theme, { isMini })}>
           <Breadcrumbs icon="home" title={route[route.length - 1]} route={route} light={light} />
         </MDBox>
+
         <MDBox sx={(theme) => navbarRow(theme, { isMini })}>
-          <Link to="/profile">
+          <Link to="/vodjaStran">
             <IconButton sx={navbarIconButton} size="small" disableRipple>
               <Icon sx={iconsStyle}>account_circle</Icon>
             </IconButton>
           </Link>
+
           <IconButton
             size="small"
             disableRipple
             color="inherit"
             sx={navbarIconButton}
             onClick={handleOpenMenu}
-          >
-            <Icon sx={iconsStyle}>notifications</Icon>
-          </IconButton>
-          {renderMenu()}
-          {/* Logout Button */}
+          ></IconButton>
+
           <IconButton
             size="small"
             disableRipple

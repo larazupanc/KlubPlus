@@ -109,18 +109,7 @@ function Basic() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </MDBox>
-            <MDBox display="flex" alignItems="center" ml={-1}>
-              <Switch checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} />
-              <MDTypography
-                variant="button"
-                fontWeight="regular"
-                color="text"
-                onClick={() => setRememberMe(!rememberMe)}
-                sx={{ cursor: "pointer", userSelect: "none", ml: -1 }}
-              >
-                  Zapomni si me
-              </MDTypography>
-            </MDBox>
+
             {error && (
               <MDBox mt={2}>
                 <MDTypography variant="caption" color="error">

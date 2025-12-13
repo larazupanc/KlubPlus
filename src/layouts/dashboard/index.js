@@ -1,6 +1,7 @@
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import MDBox from "components/MDBox";
+import MDButton from "components/MDButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
@@ -12,11 +13,16 @@ import ProjektiOverview from "layouts/dashboard/components/DogodkiOverview";
 import SestankiOverview from "layouts/dashboard/components/SestankiOverview";
 import reportSestanki from "./data/reportSestanki";
 import reportDogodki from "./data/reportDogodki";
+import { BrowserRouter } from "react-router-dom";
+
+import { Navigate, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "firebaseConfig";
 
 function Dashboard() {
+  const navigate = useNavigate();
+
   const [projectCount, setProjectCount] = useState(0);
   const [meetingCount, setMeetingCount] = useState(0);
   const [tasks, setTasks] = useState(null);
@@ -77,11 +83,7 @@ function Dashboard() {
               />
             </MDBox>
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <MDBox mb={1.5}>
-              <ComplexStatisticsCard icon="person_add" title="Članov" count="71" />
-            </MDBox>
-          </Grid>
+
           <Grid item xs={12} md={6} lg={3}>
             <MDBox mb={1.5}>
               <ComplexStatisticsCard
@@ -92,59 +94,34 @@ function Dashboard() {
               />
             </MDBox>
           </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <MDBox mb={1.5}>
-              <ComplexStatisticsCard
-                color="primary"
-                icon="event"
-                title="Dni do Akademskega plesa"
-                count="0"
-              />
+          <Grid item xs={12} md={6} lg={6}>
+            <MDBox mb={1.5} display="flex" justifyContent="center" alignItems="center">
+              <MDBox display="flex" justifyContent="center" alignItems="center" height="100%">
+                <MDButton
+                  variant="gradient"
+                  color="info"
+                  onClick={() => navigate("/ure")}
+                  sx={{
+                    px: 5,
+                    py: 2,
+                    fontSize: "1.2rem",
+                    fontWeight: "bold",
+                    borderRadius: "16px",
+                    textTransform: "none",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                    "&:hover": {
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 6px 16px rgba(0,0,0,0.3)",
+                    },
+                    transition: "all 0.2s ease-in-out",
+                  }}
+                >
+                  Začni uradne ure
+                </MDButton>
+              </MDBox>
             </MDBox>
           </Grid>
         </Grid>
-
-        <MDBox mt={4.5}>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6} lg={4}>
-              <MDBox mb={3}>
-                <ReportsBarChart
-                  color="info"
-                  title="Kuponi 2025"
-                  description="Število izdanih kuponov v letu 2025."
-                  date="Naslednji dogodek čez 3 dni"
-                  chart={reportsBarChartData}
-                />
-              </MDBox>
-            </Grid>
-            <Grid item xs={12} md={6} lg={4}>
-              <MDBox mb={3}>
-                {sales && (
-                  <ReportsLineChart
-                    color="success"
-                    title="Dogodkov v letu 2025"
-                    description="Število dogodkov v letu 2025. Več na strani dogodki."
-                    date="Naslednji dogodek čez 3 dni"
-                    chart={sales}
-                  />
-                )}
-              </MDBox>
-            </Grid>
-            <Grid item xs={12} md={6} lg={4}>
-              <MDBox mb={3}>
-                {tasks && (
-                  <ReportsLineChart
-                    color="dark"
-                    title="Sestanki 2025"
-                    description="Število sestankov v letu 2025. Več na strani sestanki."
-                    date="Naslednji sestanek čez 3 dni"
-                    chart={tasks}
-                  />
-                )}
-              </MDBox>
-            </Grid>
-          </Grid>
-        </MDBox>
 
         <MDBox>
           <Grid container spacing={3}>
