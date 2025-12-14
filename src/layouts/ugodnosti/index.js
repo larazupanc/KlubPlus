@@ -169,7 +169,6 @@ function Ugodnosti() {
     setPorabaRazlog("");
     setShowModal(true);
   };
-
   const handlePoraba = async () => {
     if (!porabaZnesek || isNaN(porabaZnesek)) return alert("Vnesi veljaven znesek.");
 
@@ -183,32 +182,30 @@ function Ugodnosti() {
       timestamp: new Date(),
     });
 
-    for (const docItem of placila) {
-      const docRef = doc(db, "ugodnosti", docItem.id);
+    const docWithUser = placila.find((docItem) =>
+      docItem.payments?.some((p) => p.name === selectedUser.name)
+    );
 
-      const newPayments = docItem.payments.map((p) => {
-        if (p.name === selectedUser.name && p.email === selectedUser.email) {
-          return { ...p, amount: p.amount - znesek };
-        }
-        return p;
-      });
-
-      await updateDoc(docRef, { payments: newPayments });
+    if (!docWithUser) {
+      alert("Uporabnik nima ugodnosti.");
+      return;
     }
 
-    setShowModal(false);
-    setPlacila((prev) =>
-      prev.map((docItem) => {
+    const updatedPayments = docWithUser.payments.map((p) => {
+      if (p.name === selectedUser.name) {
         return {
-          ...docItem,
-          payments: docItem.payments.map((p) => {
-            if (p.name === selectedUser.name && p.email === selectedUser.email) {
-              return { ...p, amount: p.amount - znesek };
-            }
-            return p;
-          }),
+          ...p,
+          amount: Math.max(0, p.amount - znesek),
         };
-      })
+      }
+      return p;
+    });
+
+    const docRef = doc(db, "ugodnosti", docWithUser.id);
+    await updateDoc(docRef, { payments: updatedPayments });
+
+    setPlacila((prev) =>
+      prev.map((d) => (d.id === docWithUser.id ? { ...d, payments: updatedPayments } : d))
     );
 
     setShowModal(false);

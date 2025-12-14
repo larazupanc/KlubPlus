@@ -27,6 +27,7 @@ function Izplacila() {
   const [placila, setPlacila] = useState([]);
   const [projekti, setProjekti] = useState([]);
   const navigate = useNavigate();
+  const key = name.toLowerCase().trim();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,32 +56,43 @@ function Izplacila() {
       date.getFullYear() === currentMonth.getFullYear()
     );
   });
-
   const getAllPeopleCombined = () => {
     const peopleMap = new Map();
 
     placilaInMonth.forEach(({ name, email, amount, izplacano }) => {
-      const key = `${name}|||${email}`;
-      if (!peopleMap.has(key))
-        peopleMap.set(key, { name, email, placila: 0, projekti: 0, izplacano: false });
+      const key = name.toLowerCase().trim();
 
-      const person = peopleMap.get(key);
-      person.placila += amount;
-      person.izplacano = izplacano || false;
-    });
-
-    projektiInMonth.forEach(({ vodja, vodjaEmail, znesekTRR }) => {
-      const key = `${vodja}|||${vodjaEmail}`;
-      if (!peopleMap.has(key))
+      if (!peopleMap.has(key)) {
         peopleMap.set(key, {
-          name: vodja,
-          email: vodjaEmail,
+          name,
+          email: email || "",
           placila: 0,
           projekti: 0,
           izplacano: false,
         });
+      }
 
-      peopleMap.get(key).projekti += znesekTRR || 0;
+      const person = peopleMap.get(key);
+      person.placila += amount || 0;
+      person.izplacano = person.izplacano || izplacano;
+    });
+
+    // PROJEKTI
+    projektiInMonth.forEach(({ vodja, vodjaEmail, znesekTRR }) => {
+      const key = vodja.toLowerCase().trim();
+
+      if (!peopleMap.has(key)) {
+        peopleMap.set(key, {
+          name: vodja,
+          email: vodjaEmail || "",
+          placila: 0,
+          projekti: 0,
+          izplacano: false,
+        });
+      }
+
+      const person = peopleMap.get(key);
+      person.projekti += znesekTRR || 0;
     });
 
     return Array.from(peopleMap.values());
@@ -139,7 +151,6 @@ function Izplacila() {
 
   const columns = [
     { Header: "Ime", accessor: "name" },
-    { Header: "Email", accessor: "email" },
     { Header: "Iz honorarjev", accessor: "placila" },
     { Header: "Iz projektov", accessor: "projekti" },
     { Header: "Skupaj", accessor: "skupaj" },
@@ -148,7 +159,6 @@ function Izplacila() {
 
   const rows = combinedPeople.map((person) => ({
     name: person.name,
-    email: person.email,
     placila: `${person.placila.toFixed(2)} €`,
     projekti: `${person.projekti.toFixed(2)} €`,
     skupaj: `${(person.placila + person.projekti).toFixed(2)} €`,
