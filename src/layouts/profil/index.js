@@ -81,11 +81,15 @@ function UserApprovalPanel() {
       newStatus === "approved" ? "/api/users/send-approval-mail" : "/api/users/send-rejection-mail";
 
     try {
-      await fetch(`http://localhost:5000${endpoint}`, {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, name }),
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
     } catch (err) {
       console.error("Napaka pri pošiljanju maila:", err);
     }
