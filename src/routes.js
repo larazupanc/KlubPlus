@@ -4,7 +4,6 @@ import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import Sestanki from "layouts/sestanki";
 import Projekti from "layouts/projekti";
-import Pomocnik from "layouts/pomocnik";
 import Ure from "layouts/ure";
 import Koledar from "layouts/koledar";
 import Izplacila from "layouts/izplacila";
