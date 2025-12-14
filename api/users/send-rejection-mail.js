@@ -1,4 +1,4 @@
-import { sendRejectionMail } from "../../../src/services/mailjet.js";
+import { sendRejectionMail } from "services/mailService";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
