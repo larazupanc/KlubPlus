@@ -1,4 +1,4 @@
-import { sendRejectionMail } from "services/mailService";
+import { sendRejectionMail } from "../../src/services/mailService";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
