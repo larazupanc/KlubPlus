@@ -27,7 +27,6 @@ router.post("/send-approval-mail", async (req, res) => {
   }
 });
 
-// ❌ ZAVRNITEV UPORABNIKA
 router.post("/send-rejection-mail", async (req, res) => {
   let body = req.body;
 
